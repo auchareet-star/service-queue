@@ -175,6 +175,7 @@
           <tr><td><span class="method get">GET</span></td><td class="mono">/his/patients/{hn}/appointments?date=</td><td>รายการนัดวันนี้ (อาจหลายคลินิก) → appointmentId, clinicCode, doctor, time</td><td>3.1.9, 3.5</td></tr>
           <tr><td><span class="method post">POST</span></td><td class="mono">/his/visits</td><td>เปิด Visit → ส่ง HN, clinicCode, eligibilityCode, queueRef → คืน <b>VN (Visit Number)</b></td><td>3.1.3, 3.1.4, 3.6.4</td></tr>
           <tr><td><span class="method get">GET</span></td><td class="mono">/his/appointments/{id}/orders</td><td>order Lab/X-ray/หัตถการ ที่ผูกกับนัดครั้งก่อน (auto)</td><td>3.1.10, 3.6.8</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/visits/{vn}/orders</td><td>order ปัจจุบันของ Visit (ยา/Lab/X-ray) — ใช้ตอนกด "เสร็จ" เพื่อให้ <b>Routing Engine</b> ตัดสินจุดถัดไป (ทางเลือกแทน webhook order-created)</td><td>routing</td></tr>
           <tr><td><span class="method post">POST</span></td><td class="mono">/his/patients</td><td>ลงทะเบียนผู้ป่วยใหม่ → คืน HN ใหม่</td><td>3.2.2–3.2.4</td></tr>
         </tbody>
       </table>
@@ -296,10 +297,12 @@
         <thead><tr><th>Method</th><th>Endpoint (ที่คิวเปิด)</th><th>หน้าที่</th><th>TOR</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/appointment-created</td><td>HIS แจ้งว่ามีการจองนัด → ระบบคิว <b>activate คิวอัตโนมัติ</b></td><td>3.5.1.5</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/order-created</td><td>HIS แจ้งว่าแพทย์สั่ง <b>ยา/Lab/X-ray</b> (<code>orderType</code>) → ตั้ง flag เพื่อให้ <b>Routing Engine เพิ่มจุดถัดไป</b> (เช่น เพิ่มห้องจ่ายยา)</td><td>3.3.9, routing</td></tr>
           <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/order-status</td><td>HIS แจ้งสถานะผล LAB/X-ray เปลี่ยน → ปลดล็อค/จัดลำดับคิว</td><td>3.3.7</td></tr>
           <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/payment-completed</td><td>Payment/HIS แจ้งชำระเงินแล้ว → <b>ส่งคิวไปจุดจัดยาอัตโนมัติ</b></td><td>3.8.5, 3.9.6</td></tr>
         </tbody>
       </table>
+      <div class="note">🔀 <b>order-created</b> เป็นหัวใจของฟีเจอร์ <b>เส้นทางบริการอัตโนมัติ (Service Routing)</b> — HIS แจ้งว่ามีสั่งยา/Lab/X-ray แล้วระบบคิวเพิ่มจุดที่ต้องไปต่อให้เอง · รายละเอียดเต็มดูที่เอกสาร <a href="Service-Routing-Design.html" style="color:var(--his);font-weight:700;">Service Routing Design</a> (หัวข้อ 6)</div>
 
       <h3>4.2 Queue Service API (ให้ HIS/LINE/Portal ดึงสถานะคิว)</h3>
       <table>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Routing Design — เส้นทางบริการอัตโนมัติ</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--bg:#f4f7fa;--card:#fff;
+    --text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;--code-bg:#f0f4f8;--his:#7b2cbf;
+    --always:#22c55e;--his-c:#7b2cbf;--manual:#f59e0b;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.66;font-size:14.5px;}
+  .layout{display:flex;max-width:1440px;margin:0 auto;}
+  .sidebar{width:280px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:22px 16px;}
+  .sidebar h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px;}
+  .sidebar a{display:block;padding:6px 10px;border-radius:7px;color:var(--text);text-decoration:none;font-size:13px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .content{flex:1;padding:32px 42px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--accent));color:#fff;border-radius:18px;padding:34px 38px;margin-bottom:26px;box-shadow:0 12px 32px rgba(30,96,145,.26);}
+  .hero h1{margin:0 0 8px;font-size:27px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14.5px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:26px 30px;margin-bottom:20px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 16px;font-size:20px;color:var(--primary);padding-bottom:11px;border-bottom:2px solid var(--code-bg);}
+  h3{color:var(--primary-light);font-size:16px;margin:22px 0 9px;}
+  h4{font-size:14.5px;margin:16px 0 7px;}
+  p{margin:8px 0;}ul,ol{margin:8px 0;padding-left:22px;}li{margin:5px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12.3px;}
+  pre{background:#1b2733;color:#d6e3f0;padding:15px 18px;border-radius:12px;overflow-x:auto;font-family:Consolas,monospace;font-size:12.5px;line-height:1.5;}
+  pre .k{color:#7fd1e8;}pre .s{color:#b5e0a0;}pre .c{color:#7b8a99;}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.2px;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  thead th{background:var(--primary);color:#fff;text-align:left;padding:9px 12px;}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafcfe;}
+  .mono{font-family:monospace;font-size:12px;}
+
+  .note{background:#fff8e6;border-left:4px solid var(--manual);padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13.6px;}
+  .note.tip{background:#e9f7ef;border-left-color:var(--always);}
+  .note.crit{background:#fdeaea;border-left-color:#ef4444;}
+  .note.his{background:#f6ecfe;border-left-color:var(--his);}
+
+  /* condition tags */
+  .cond{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:13px;color:#fff;white-space:nowrap;}
+  .c-always{background:var(--always);}.c-his{background:var(--his-c);}.c-manual{background:var(--manual);}
+
+  /* node flow diagram */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:4px;margin:18px 0;}
+  .frow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
+  .node{background:#fff;border:2px solid var(--primary-light);border-radius:11px;padding:11px 16px;font-weight:600;font-size:13px;text-align:center;box-shadow:0 4px 10px rgba(30,96,145,.1);min-width:96px;}
+  .node small{display:block;font-weight:400;font-size:11px;color:var(--muted);}
+  .node.start{border-color:var(--accent);background:#e8f6f6;}
+  .node.end{border-color:var(--always);background:#e9f9ef;}
+  .node.cond{border-color:var(--his);background:#f6ecfe;border-style:dashed;color:var(--text);}
+  .node.cond small{color:var(--muted);}
+  .ar{color:var(--accent);font-size:22px;font-weight:700;}
+  .ar small{display:block;font-size:10px;color:var(--muted);}
+  .ad{color:var(--accent);font-size:20px;font-weight:700;text-align:center;}
+
+  /* config mock */
+  .cfg{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:14px 0;box-shadow:0 4px 14px rgba(0,0,0,.06);}
+  .cfg-top{background:#f4f8fb;padding:10px 16px;font-weight:700;color:var(--primary);border-bottom:1px solid var(--border);font-size:13.5px;}
+  .cfg table{margin:0;box-shadow:none;border-radius:0;}
+
+  .badge{display:inline-block;background:#eef6fb;color:var(--primary);border:1px solid #d6e8f3;border-radius:7px;padding:2px 9px;font-size:12px;font-weight:600;}
+
+  @media(max-width:900px){.sidebar{display:none;}.content{padding:18px;}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>สารบัญ</h2>
+    <a href="#why">1. ปัญหา & แนวคิด</a>
+    <a href="#concept">2. ภาพรวม Care Pathway</a>
+    <a href="#modes">3. รูปแบบการ routing 3 แบบ</a>
+    <a href="#config">4. หน้าตั้งค่า (Config UI)</a>
+    <a href="#model">5. Data Model ที่ต้องเพิ่ม</a>
+    <a href="#his">6. การเชื่อม HIS (สัญญาณ order)</a>
+    <a href="#mapping-order" style="color:#b00020;font-weight:700;">★ order → รู้ได้ไงว่าไปจุดไหน</a>
+    <a href="#example">7. Flow ตัวอย่าง (OPD)</a>
+    <a href="#engine">8. ตรรกะ Routing Engine</a>
+    <a href="#build">9. ความสัมพันธ์กับระบบเดิม</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>🔀 Service Routing Design — เส้นทางบริการอัตโนมัติ</h1>
+      <p>ออกแบบฟีเจอร์ "ตั้งค่าว่าเสร็จจุดนี้ → ไปจุดไหนต่อ" พร้อมเงื่อนไขจาก HIS (เช่น มีสั่งยา → เพิ่มจุดห้องจ่ายยา)</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">ส่วนขยายของระบบ HAOS Queue · ต่อยอดจากฟีเจอร์ Forward เดิม · 2026-06-26</p>
+    </div>
+
+    <!-- 1 -->
+    <section id="why">
+      <h2>1. ปัญหา & แนวคิด</h2>
+      <p><b>ปัจจุบัน:</b> ระบบมีฟีเจอร์ <b>Forward (ส่งต่อ)</b> แต่เป็นการ <u>เลือกปลายทางเองทุกครั้ง (manual)</u> โดยเจ้าหน้าที่ — ทำให้:</p>
+      <ul>
+        <li>เจ้าหน้าที่ต้องจำว่า "เสร็จจุดนี้ต้องไปไหนต่อ" เอง → ผิดพลาดได้</li>
+        <li>ไม่รู้อัตโนมัติว่าผู้ป่วยต้องไปห้องจ่ายยาไหม (ขึ้นกับว่าแพทย์สั่งยาหรือเปล่า ซึ่งข้อมูลอยู่ใน HIS)</li>
+        <li>ผู้ป่วยไม่เห็นภาพรวมว่าตัวเองเหลืออีกกี่จุด</li>
+      </ul>
+      <p><b>สิ่งที่ต้องการ:</b> หน้าตั้งค่า <b>"กฎเส้นทาง (Routing Rules)"</b> ที่กำหนดล่วงหน้าว่าแต่ละจุดเสร็จแล้วไปต่อที่ไหน — และบางเส้นทางเป็น <b>เงื่อนไขจาก HIS</b> เช่น <i>"ถ้า HIS แจ้งว่ามีการสั่งยา → เพิ่มจุดห้องจ่ายยาในเส้นทางอัตโนมัติ"</i></p>
+      <div class="note tip"><b>สรุปแนวคิด:</b> เปลี่ยนจาก "ส่งต่อแบบเลือกเอง" → เป็น <b>"เส้นทางอัตโนมัติตามกฎ + เงื่อนไขจาก HIS"</b> โดยยังเก็บโหมด manual ไว้เป็นทางเลือก</div>
+    </section>
+
+    <!-- 2 -->
+    <section id="concept">
+      <h2>2. ภาพรวม — Care Pathway (เส้นทางการรับบริการ)</h2>
+      <p>มองคิว 1 ใบเป็น <b>"การเดินทางผ่านหลายจุดบริการ"</b> โดยแต่ละจุดเมื่อเสร็จ ระบบจะคำนวณ "จุดถัดไป" จากกฎที่ตั้งไว้ + ข้อมูลจาก HIS แล้วพาคิวเข้าคิวจุดต่อไปให้อัตโนมัติ</p>
+      <div class="flow">
+        <div class="frow">
+          <div class="node start">รับบัตร</div>
+          <div class="ar">→</div>
+          <div class="node">ซักประวัติ<small>วัด Vital</small></div>
+          <div class="ar"><small>เสมอ</small>→</div>
+          <div class="node">ห้องตรวจ<small>พบแพทย์</small></div>
+          <div class="ar"><small>เงื่อนไข HIS</small>→</div>
+          <div class="node cond">? แพทย์สั่งอะไร</div>
+        </div>
+        <div class="ad">↓ แตกเส้นทางตามที่ HIS แจ้ง</div>
+        <div class="frow">
+          <div class="node">ถ้าสั่ง Lab → ห้อง Lab<small>แล้ววนกลับห้องตรวจ</small></div>
+          <div class="node">ถ้าสั่งยา → การเงิน → ห้องจ่ายยา</div>
+          <div class="node end">ถ้าไม่มี → จบ</div>
+        </div>
+      </div>
+      <div class="note his">🟣 จุดสำคัญ: เส้นทาง <b>ไม่ตายตัว</b> — ห้องจ่ายยา/Lab/X-ray จะ "ถูกเพิ่มเข้าเส้นทาง" <u>ก็ต่อเมื่อ HIS บอกว่ามี order นั้นจริง</u></div>
+    </section>
+
+    <!-- 3 -->
+    <section id="modes">
+      <h2>3. รูปแบบการ routing 3 แบบ</h2>
+      <table>
+        <thead><tr><th>โหมด</th><th>คือ</th><th>ตัวอย่าง</th></tr></thead>
+        <tbody>
+          <tr><td><span class="cond c-always">เสมอ (Always)</span></td><td>เสร็จจุดนี้ → ไปจุดถัดไปทุกครั้ง อัตโนมัติ</td><td>ซักประวัติ → ห้องตรวจ (เสมอ)</td></tr>
+          <tr><td><span class="cond c-his">เงื่อนไข HIS</span></td><td>ไปจุดถัดไป <b>เฉพาะเมื่อ HIS แจ้งสัญญาณ</b>ที่กำหนด</td><td>ห้องตรวจ → ห้องจ่ายยา <b>ถ้ามี DRUG_ORDER</b></td></tr>
+          <tr><td><span class="cond c-manual">เลือกเอง (Manual)</span></td><td>ระบบเสนอตัวเลือก ให้เจ้าหน้าที่เลือกปลายทาง (เหมือน Forward เดิม)</td><td>กรณีไม่เข้ากฎใด — เจ้าหน้าที่ตัดสินใจ</td></tr>
+        </tbody>
+      </table>
+      <div class="note">💡 หนึ่งจุดมีได้หลายกฎพร้อมกัน เช่น ห้องตรวจอาจมีทั้ง "ถ้าสั่ง Lab→Lab", "ถ้าสั่งยา→จ่ายยา", "ถ้าไม่มี→จบ" — ระบบประเมินทุกกฎแล้วสร้างเส้นทางจริง</div>
+    </section>
+
+    <!-- 4 -->
+    <section id="config">
+      <h2>4. หน้าตั้งค่า (Config UI)</h2>
+      <p>หน้าใหม่ในเมนู Admin/Master: <b>"ตั้งค่าเส้นทางบริการ (Service Routing)"</b> — เป็นตารางกฎ เพิ่ม/ลบ/แก้ได้</p>
+
+      <div class="cfg">
+        <div class="cfg-top">⚙️ ตั้งค่าเส้นทางบริการ — ตัวอย่างกฎ</div>
+        <table>
+          <thead><tr><th>จุดที่เสร็จ (จาก)</th><th>เงื่อนไข</th><th>ไปต่อที่ (ปลายทาง)</th><th>ลำดับ</th><th>โหมด</th></tr></thead>
+          <tbody>
+            <tr><td>ซักประวัติ</td><td><span class="cond c-always">เสมอ</span></td><td>ห้องตรวจ</td><td>1</td><td>อัตโนมัติ</td></tr>
+            <tr><td>ห้องตรวจ</td><td><span class="cond c-his">ถ้ามี LAB_ORDER</span></td><td>ห้อง Lab</td><td>1</td><td>อัตโนมัติ</td></tr>
+            <tr><td>ห้องตรวจ</td><td><span class="cond c-his">ถ้ามี XRAY_ORDER</span></td><td>ห้อง X-ray</td><td>2</td><td>อัตโนมัติ</td></tr>
+            <tr><td>ห้องตรวจ</td><td><span class="cond c-his">ถ้ามี DRUG_ORDER</span></td><td>การเงิน → ห้องจ่ายยา</td><td>3</td><td>อัตโนมัติ</td></tr>
+            <tr><td>ห้องตรวจ</td><td><span class="cond c-always">ถ้าไม่มี order</span></td><td>จบบริการ</td><td>9</td><td>อัตโนมัติ</td></tr>
+            <tr><td>ห้อง Lab</td><td><span class="cond c-always">เสมอ</span></td><td>ห้องตรวจ (วนกลับ)</td><td>1</td><td>อัตโนมัติ</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>ฟิลด์ในแต่ละกฎ</h4>
+      <ul>
+        <li><b>จุดที่เสร็จ (From)</b> — เลือกห้อง + ประเภทบริการ (อ้างอิง master เดิม)</li>
+        <li><b>เงื่อนไข</b> — เสมอ / ถ้ามีสัญญาณ HIS (เลือกชนิด: DRUG/LAB/XRAY/หัตถการ/custom) / เลือกเอง</li>
+        <li><b>ปลายทาง (To)</b> — ห้อง + บริการถัดไป (เลือกได้หลายจุดเป็นลำดับ เช่น การเงิน→จ่ายยา)</li>
+        <li><b>ลำดับ (Priority)</b> — กรณีหลายกฎเข้าเงื่อนไขพร้อมกัน จะจัดคิวตามลำดับนี้</li>
+        <li><b>โหมด</b> — อัตโนมัติ (auto-forward ทันที) หรือ ต้องให้เจ้าหน้าที่กดยืนยัน</li>
+        <li><b>เปิด/ปิด</b> — เปิดใช้งานกฎ</li>
+      </ul>
+      <div class="note tip">💡 แนะนำมีโหมด <b>"แสดงผังเส้นทาง (Preview)"</b> — วาด node ให้เห็นภาพว่ากฎที่ตั้งไว้ทำให้ผู้ป่วยเดินทางยังไง ป้องกันตั้งกฎวนลูปไม่รู้จบ</div>
+    </section>
+
+    <!-- 5 -->
+    <section id="model">
+      <h2>5. Data Model ที่ต้องเพิ่ม</h2>
+      <h4>① ตารางกฎเส้นทาง — <code>TbServiceRoute</code></h4>
+      <table>
+        <thead><tr><th>ฟิลด์</th><th>ชนิด</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">RouteId</td><td>PK</td><td>รหัสกฎ</td></tr>
+          <tr><td class="mono">FromRoomId / FromServiceTypeId</td><td>FK (nullable)</td><td>จุดที่เสร็จ (null = จุดเริ่มต้น)</td></tr>
+          <tr><td class="mono">ConditionType</td><td>enum</td><td><code>ALWAYS</code> / <code>HIS_FLAG</code> / <code>MANUAL</code></td></tr>
+          <tr><td class="mono">ConditionKey</td><td>string</td><td>เมื่อ HIS_FLAG เช่น <code>DRUG_ORDER</code>, <code>LAB_ORDER</code>, <code>XRAY_ORDER</code></td></tr>
+          <tr><td class="mono">ToRoomId / ToServiceTypeId</td><td>FK</td><td>ปลายทาง</td></tr>
+          <tr><td class="mono">Sequence</td><td>int</td><td>ลำดับความสำคัญ</td></tr>
+          <tr><td class="mono">AutoForward</td><td>bool</td><td>ส่งอัตโนมัติ หรือรอยืนยัน</td></tr>
+          <tr><td class="mono">Status</td><td>bool</td><td>เปิด/ปิด</td></tr>
+        </tbody>
+      </table>
+
+      <h4>② ตารางสัญญาณ/order จาก HIS — <code>TbQueueOrderFlag</code></h4>
+      <table>
+        <thead><tr><th>ฟิลด์</th><th>คำอธิบาย</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">QueueId / VN</td><td>ผูกกับคิว/Visit</td></tr>
+          <tr><td class="mono">OrderType</td><td><code>DRUG</code> / <code>LAB</code> / <code>XRAY</code> / <code>PROCEDURE</code></td></tr>
+          <tr><td class="mono">Status</td><td>active / completed</td></tr>
+          <tr><td class="mono">Source</td><td>HIS (อ้างอิงว่ามาจากไหน)</td></tr>
+          <tr><td class="mono">ReceivedAt</td><td>เวลาที่ได้รับสัญญาณ</td></tr>
+        </tbody>
+      </table>
+      <div class="note tip">💡 <b>เส้นทางจริงที่ผู้ป่วยเดิน</b> ใช้ของเดิมได้เลย — <code>TbQueueService</code> รองรับ 1 คิวมีหลาย record อยู่แล้ว (Forward สร้าง record ใหม่) → เพิ่มแค่ฟิลด์ <code>RouteId</code> อ้างอิงว่ามาจากกฎไหน + <code>Sequence</code> เพื่อเรียงเส้นทาง</div>
+    </section>
+
+    <!-- 6 -->
+    <section id="his">
+      <h2>6. การเชื่อม HIS — HIS บอกว่ามี order อะไร</h2>
+      <p>มี 2 วิธีให้ HIS แจ้งสัญญาณ (ใช้ร่วมกันได้):</p>
+
+      <h3>วิธี A — HIS Push (Webhook) <span class="badge">แนะนำ</span></h3>
+      <p>เมื่อแพทย์สั่งยา/Lab/X-ray ใน HIS → HIS ยิง webhook มาที่ระบบคิว</p>
+<pre><span class="c">// POST /queue/webhooks/order-created  (HIS → Queue)</span>
+{
+  <span class="k">"eventId"</span>: <span class="s">"evt-..."</span>,       <span class="c">// idempotency</span>
+  <span class="k">"vn"</span>: <span class="s">"VN-2026-0099"</span>,
+  <span class="k">"hn"</span>: <span class="s">"00123456"</span>,
+  <span class="k">"orderType"</span>: <span class="s">"DRUG"</span>,       <span class="c">// DRUG / LAB / XRAY / PROCEDURE</span>
+  <span class="k">"orderedAt"</span>: <span class="s">"2026-06-26T10:15:00+07:00"</span>
+}</pre>
+      <p>→ ระบบคิวบันทึก <code>TbQueueOrderFlag</code> ของคิวนั้น (DRUG = true)</p>
+
+      <h3>วิธี B — Queue Pull (ตอนกดเสร็จ)</h3>
+      <p>เมื่อเจ้าหน้าที่กด "เสร็จ" ที่ห้องตรวจ → ระบบคิวเรียก HIS ถาม order ของ Visit นั้น</p>
+<pre><span class="c">// GET /his/visits/{vn}/orders  (Queue → HIS)</span>
+{
+  <span class="k">"vn"</span>: <span class="s">"VN-2026-0099"</span>,
+  <span class="k">"orders"</span>: [
+    { <span class="k">"type"</span>: <span class="s">"DRUG"</span>, <span class="k">"status"</span>: <span class="s">"active"</span> },
+    { <span class="k">"type"</span>: <span class="s">"LAB"</span>,  <span class="k">"status"</span>: <span class="s">"active"</span> }
+  ]
+}</pre>
+      <div class="note his"><b>เลือกแบบไหน?</b> ถ้า HIS รองรับ webhook → ใช้ <b>วิธี A</b> (real-time, ตอนกดเสร็จรู้ทันที) · ถ้าไม่รองรับ → ใช้ <b>วิธี B</b> ถาม ณ ตอนกดเสร็จ (ดูหัวข้อ "ระดับจำเป็น & ทางเลือก" ในเอกสาร HIS Integration)</div>
+      <div class="note"><b>ทางเลือกสำรอง (ไม่มี HIS):</b> ให้เจ้าหน้าที่ห้องตรวจ <b>ติ๊กเองว่า "สั่งยา / สั่ง Lab"</b> ตอนกดเสร็จ → ระบบ routing ทำงานต่อได้เหมือนกัน (manual flag แทนสัญญาณ HIS)</div>
+    </section>
+
+    <!-- MAPPING -->
+    <section id="mapping-order">
+      <h2>★ order มาแล้ว ระบบรู้ได้ยังไงว่าต้องไปจุดไหน?</h2>
+      <div class="note crit"><b>หัวใจสำคัญ:</b> HIS ส่งมาแค่ <b>"ประเภท order"</b> (เช่น <code>DRUG</code>) — <u>HIS ไม่รู้จักและไม่บอก</u>ว่า "ห้องจ่ายยา" ของระบบคิวคือห้องไหน เพราะรหัสห้อง/จุดบริการเป็นของระบบคิว/โรงพยาบาลแต่ละที่ <b>การแปลง "DRUG → ห้องจ่ายยา" เกิดจากตารางตั้งค่าฝั่งระบบคิวเอง</b></div>
+
+      <p>มีการแปลง <b>2 ชั้น</b> ก่อนจะรู้ว่าไปจุดไหน:</p>
+
+      <h3>ชั้นที่ 1 — รหัส order ของ HIS → ประเภทมาตรฐาน (Category)</h3>
+      <p>HIS อาจส่งรหัสละเอียด (เช่น <code>"MED-ORAL"</code>, <code>"LAB-CBC"</code>, <code>"XR-CHEST"</code>) ต้องจับกลุ่มเป็นประเภทมาตรฐานที่ระบบคิวเข้าใจก่อน</p>
+      <table>
+        <thead><tr><th>รหัส/ประเภทจาก HIS</th><th>จับเป็น Category</th></tr></thead>
+        <tbody>
+          <tr><td>MED-*, DRUG, ยา</td><td><code>DRUG_ORDER</code></td></tr>
+          <tr><td>LAB-*, ตรวจเลือด</td><td><code>LAB_ORDER</code></td></tr>
+          <tr><td>XR-*, CT, MRI</td><td><code>XRAY_ORDER</code></td></tr>
+        </tbody>
+      </table>
+      <p class="muted">* ถ้า HIS ส่ง <code>orderType</code> เป็นประเภทกว้างอยู่แล้ว (DRUG/LAB/XRAY) ก็ข้ามชั้นนี้ได้</p>
+
+      <h3>ชั้นที่ 2 — Category → จุดบริการปลายทาง (ตารางตั้งค่าที่ admin กำหนด)</h3>
+      <p>นี่คือจุดที่ตอบคำถาม — admin ตั้งค่าไว้ในตารางว่าแต่ละประเภทไปจุดไหน:</p>
+      <div class="cfg">
+        <div class="cfg-top">⚙️ Order Type → จุดปลายทาง (Order Routing Map)</div>
+        <table>
+          <thead><tr><th>Category (จาก HIS)</th><th>จุดปลายทางในระบบคิว</th><th>หมายเหตุ</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cond c-his">DRUG_ORDER</span></td><td>การเงิน → <b>ห้องจ่ายยา</b></td><td>ชำระเงินก่อนรับยา</td></tr>
+            <tr><td><span class="cond c-his">LAB_ORDER</span></td><td><b>ห้อง Lab</b> → วนกลับห้องตรวจ</td><td>เจาะเลือดแล้วกลับพบแพทย์</td></tr>
+            <tr><td><span class="cond c-his">XRAY_ORDER</span></td><td><b>ห้อง X-ray</b> → วนกลับห้องตรวจ</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note tip">💡 ตารางนี้คือ <b>กฎ Routing (<code>TbServiceRoute</code>)</b> ที่ออกแบบไว้ในหัวข้อ 4–5 นั่นเอง — ฟิลด์ <code>ConditionKey = DRUG_ORDER</code> + <code>ToRoom = ห้องจ่ายยา</code> · พูดอีกแบบ: <b>"ความรู้ว่า DRUG ไปไหน" เก็บอยู่ในกฎที่ admin ตั้ง ไม่ได้มาจาก HIS</b></div>
+
+      <h3>สรุปการไหลของข้อมูล</h3>
+      <div class="flow">
+        <div class="frow">
+          <div class="node cond">HIS: order = DRUG</div>
+          <div class="ar"><small>ชั้น 1</small>→</div>
+          <div class="node">Category = DRUG_ORDER</div>
+          <div class="ar"><small>ชั้น 2 (ตารางตั้งค่า)</small>→</div>
+          <div class="node end">ปลายทาง = ห้องจ่ายยา</div>
+        </div>
+      </div>
+
+      <div class="note his"><b>ทำไมต้องแยกเป็นตารางตั้งค่า ไม่ hardcode?</b> เพราะ (1) แต่ละโรงพยาบาลห้องจ่ายยา/รหัสจุดบริการไม่เหมือนกัน (2) บางที่อาจมีหลายห้องจ่ายยา/แยกตามชั้น (3) เปลี่ยนผังบริการได้โดยไม่ต้องแก้โค้ด — สอดคล้องกับ TOR ที่ย้ำ "กำหนดโดยผู้ควบคุมระบบของโรงพยาบาล"</div>
+
+      <h3>กรณีพิเศษที่ต้องตัดสินใจ</h3>
+      <table>
+        <thead><tr><th>กรณี</th><th>ทางออก</th></tr></thead>
+        <tbody>
+          <tr><td>มีห้องจ่ายยาหลายห้อง (เช่น แยกชั้น/แยกสิทธิ์)</td><td>เพิ่มเงื่อนไขในกฎ เช่น DRUG_ORDER + สิทธิ์=ชำระเอง → ห้องจ่ายยา B หรือเลือกตามห้องตรวจต้นทาง</td></tr>
+          <tr><td>DRUG ปลายทางต่างกันตามแผนกต้นทาง</td><td>ใช้ฟิลด์ <code>From</code> ในกฎ (ห้องตรวจ A + DRUG → จ่ายยา A)</td></tr>
+          <tr><td>HIS ส่งรหัสที่ยัง map ไม่ได้</td><td>เข้าโหมด <span class="cond c-manual">เลือกเอง</span> ให้เจ้าหน้าที่ตัดสิน + log ไว้เพื่อเพิ่ม mapping ภายหลัง</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 7 -->
+    <section id="example">
+      <h2>7. Flow ตัวอย่างเต็ม (OPD ผู้ป่วยนอก)</h2>
+      <div class="flow">
+        <div class="frow"><div class="node start">1. รับบัตร</div><div class="ar">→</div><div class="node">2. ซักประวัติ + วัด Vital</div></div>
+        <div class="ad">↓ <small>กฎ: เสมอ → ห้องตรวจ</small></div>
+        <div class="frow"><div class="node">3. ห้องตรวจ (พบแพทย์)</div></div>
+        <div class="ad">↓ <small>แพทย์สั่งใน HIS → HIS ยิง order-created (DRUG + LAB)</small></div>
+        <div class="frow"><div class="node cond">4. กดเสร็จ → Engine ประเมินกฎ</div></div>
+        <div class="ad">↓ <small>พบ LAB_ORDER + DRUG_ORDER → สร้างเส้นทาง</small></div>
+        <div class="frow">
+          <div class="node">5a. ห้อง Lab</div><div class="ar">→</div>
+          <div class="node">วนกลับห้องตรวจ</div><div class="ar">→</div>
+          <div class="node">6. การเงิน</div><div class="ar">→</div>
+          <div class="node">7. ห้องจ่ายยา</div><div class="ar">→</div>
+          <div class="node end">จบ</div>
+        </div>
+      </div>
+      <div class="note tip">ผู้ป่วยเห็นบนมือถือ/บัตร: <b>"เส้นทางของคุณ: ✔ซักประวัติ → ✔ห้องตรวจ → ห้อง Lab → การเงิน → จ่ายยา"</b> (เหลืออีก 3 จุด) — โปร่งใส ไม่หลง</div>
+    </section>
+
+    <!-- 8 -->
+    <section id="engine">
+      <h2>8. ตรรกะ Routing Engine (ตอนกด "เสร็จ")</h2>
+      <ol>
+        <li>เจ้าหน้าที่กด <b>เสร็จสิ้น</b> ที่จุดปัจจุบัน → ปิด <code>TbQueueService</code> เดิม (Completed)</li>
+        <li>Engine โหลดกฎทั้งหมดที่ <code>From = จุดปัจจุบัน</code> และ <code>Status = เปิด</code></li>
+        <li>ประเมินแต่ละกฎ:
+          <ul>
+            <li><span class="cond c-always">ALWAYS</span> → เข้าเงื่อนไขเสมอ</li>
+            <li><span class="cond c-his">HIS_FLAG</span> → เข้าเงื่อนไขถ้าคิวนี้มี <code>TbQueueOrderFlag</code> ตรง ConditionKey</li>
+            <li><span class="cond c-manual">MANUAL</span> → แสดงตัวเลือกให้เจ้าหน้าที่เลือก</li>
+          </ul>
+        </li>
+        <li>รวมปลายทางที่เข้าเงื่อนไข เรียงตาม <code>Sequence</code> → สร้าง <b>itinerary (รายการจุดที่ต้องไป)</b></li>
+        <li>สร้าง <code>TbQueueService</code> ใหม่ที่จุดแรกของ itinerary (status รอเช็คอิน/รอเรียก) → <b>คิวเข้าคิวจุดถัดไปอัตโนมัติ</b></li>
+        <li>ถ้าไม่มีกฎใดเข้าเงื่อนไข → จบ Care Pathway (คิวเสร็จสมบูรณ์)</li>
+        <li>⚡ ยิง SignalR อัปเดตจอ/มือถือ ทุกครั้ง (เหมือน Forward เดิม)</li>
+      </ol>
+      <div class="note crit"><b>ต้องกันลูปไม่รู้จบ:</b> เช่น Lab → ห้องตรวจ → Lab → ... ควรมีกลไกตรวจ (เช่น order ที่ทำแล้วถูก mark completed ไม่ trigger ซ้ำ, หรือจำกัดจำนวนรอบ)</div>
+    </section>
+
+    <!-- 9 -->
+    <section id="build">
+      <h2>9. ความสัมพันธ์กับระบบเดิม & สิ่งที่ต้องพัฒนา</h2>
+      <table>
+        <thead><tr><th>ส่วน</th><th>มีอยู่แล้ว</th><th>ต้องเพิ่ม</th></tr></thead>
+        <tbody>
+          <tr><td>กลไกพาคิวไปจุดใหม่</td><td>✅ Forward (สร้าง TbQueueService ใหม่)</td><td>ทำให้เรียกอัตโนมัติจากกฎ (ไม่ใช่เลือกเองอย่างเดียว)</td></tr>
+          <tr><td>1 คิวหลายจุดบริการ</td><td>✅ TbQueueService หลาย record/คิว</td><td>เพิ่มฟิลด์ RouteId, Sequence</td></tr>
+          <tr><td>Real-time update</td><td>✅ SignalR</td><td>—</td></tr>
+          <tr><td>หน้าตั้งค่ากฎ</td><td>❌</td><td><b>หน้า Config Service Routing</b> (ใหม่) + CRUD API</td></tr>
+          <tr><td>ตารางกฎ/สัญญาณ</td><td>❌</td><td><b>TbServiceRoute</b>, <b>TbQueueOrderFlag</b> (ใหม่)</td></tr>
+          <tr><td>Routing Engine</td><td>❌</td><td>ตรรกะประเมินกฎตอนกดเสร็จ (ใหม่)</td></tr>
+          <tr><td>รับสัญญาณ HIS</td><td>❌</td><td>Webhook <code>order-created</code> หรือ pull <code>/visits/{vn}/orders</code></td></tr>
+          <tr><td>แสดงเส้นทางให้ผู้ป่วย</td><td>🟡 มีหน้าติดตามคิว</td><td>เพิ่มแสดง itinerary (จุดที่เหลือ)</td></tr>
+        </tbody>
+      </table>
+      <div class="note tip"><b>ข้อดีของดีไซน์นี้:</b> ต่อยอดจากของเดิมเป็นหลัก (Forward + TbQueueService + SignalR) — งานใหม่หลักคือ <b>"หน้าตั้งค่ากฎ + Routing Engine + ตัวรับสัญญาณ HIS"</b> ไม่ต้องรื้อระบบคิวเดิม</div>
+      <div class="note his"><b>เฟสการทำ:</b> <b>เฟส 1</b> routing แบบ ALWAYS + MANUAL (ไม่พึ่ง HIS) ใช้ได้ทันที · <b>เฟส 2</b> เพิ่มเงื่อนไข HIS (DRUG/LAB/XRAY) เมื่อเชื่อม HIS พร้อม</div>
+    </section>
+
+    <footer>Service Routing Design · เส้นทางบริการอัตโนมัติ · ส่วนขยายระบบ HAOS Queue · 2026-06-26</footer>
+  </main>
+</div>
+</body>
+</html>
