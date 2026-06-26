@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Flow หน้างาน — มุมมองผู้ใช้จริง</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--bg:#f4f7fa;--card:#fff;
+    --text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;--code-bg:#f0f4f8;
+    --patient:#0ea5e9;--staff:#1e6091;--tv:#a855f7;--admin:#d97706;--mgr:#16a34a;
+    --none:#94a3b8;--checkin:#3b82f6;--inprogress:#f59e0b;--holding:#a855f7;--completed:#22c55e;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.68;font-size:14.5px;}
+  .layout{display:flex;max-width:1440px;margin:0 auto;}
+  .sidebar{width:280px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:22px 16px;}
+  .sidebar h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px;}
+  .sidebar a{display:block;padding:6px 10px;border-radius:7px;color:var(--text);text-decoration:none;font-size:13px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .content{flex:1;padding:32px 42px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--accent));color:#fff;border-radius:18px;padding:34px 38px;margin-bottom:26px;box-shadow:0 12px 32px rgba(30,96,145,.26);}
+  .hero h1{margin:0 0 8px;font-size:28px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14.5px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:26px 30px;margin-bottom:20px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 16px;font-size:20px;color:var(--primary);padding-bottom:11px;border-bottom:2px solid var(--code-bg);display:flex;align-items:center;gap:10px;}
+  h3{color:var(--primary-light);font-size:16px;margin:22px 0 9px;}
+  h4{font-size:14.5px;margin:16px 0 7px;color:var(--text);}
+  p{margin:8px 0;}ul,ol{margin:8px 0;padding-left:22px;}li{margin:5px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12.3px;}
+
+  /* role chip in section header */
+  .role{font-size:12px;font-weight:700;color:#fff;padding:4px 12px;border-radius:20px;}
+  .r-patient{background:var(--patient);}.r-staff{background:var(--staff);}.r-tv{background:var(--tv);}.r-admin{background:var(--admin);}.r-mgr{background:var(--mgr);}
+
+  /* persona cards */
+  .personas{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:14px 0;}
+  @media(max-width:1000px){.personas{grid-template-columns:repeat(2,1fr);}}
+  .persona{border-radius:14px;padding:16px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);}
+  .persona .ico{font-size:28px;}
+  .persona b{display:block;margin:6px 0 4px;font-size:15px;}
+  .persona small{font-size:11.5px;opacity:.92;line-height:1.45;display:block;}
+  .pa{background:linear-gradient(135deg,#0284c7,#0ea5e9);}
+  .ps{background:linear-gradient(135deg,#1e6091,#168aad);}
+  .pt{background:linear-gradient(135deg,#9333ea,#a855f7);}
+  .pad{background:linear-gradient(135deg,#d97706,#f59e0b);}
+  .pm{background:linear-gradient(135deg,#15803d,#22c55e);}
+
+  /* big-picture swimlane */
+  .lanes{margin:16px 0;overflow-x:auto;}
+  .lane{display:flex;align-items:stretch;gap:0;margin-bottom:10px;min-width:760px;}
+  .lane-label{flex-shrink:0;width:120px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:12.5px;color:#fff;border-radius:10px 0 0 10px;padding:8px;}
+  .ll-p{background:var(--patient);}.ll-s{background:var(--staff);}.ll-t{background:var(--tv);}
+  .lane-steps{flex:1;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;background:#fafcfe;border:1px solid var(--border);border-left:none;border-radius:0 10px 10px 0;padding:10px;}
+  .ls{background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;text-align:center;min-width:92px;box-shadow:0 2px 5px rgba(0,0,0,.05);}
+  .ls b{display:block;font-size:11.5px;}
+  .lane-steps .arr{color:var(--accent);font-weight:700;flex-shrink:0;}
+
+  /* step timeline */
+  .steps{margin:14px 0;}
+  .stp{display:flex;gap:16px;padding-bottom:16px;position:relative;}
+  .stp:not(:last-child)::before{content:"";position:absolute;left:18px;top:40px;bottom:-2px;width:2px;background:linear-gradient(var(--primary-light),var(--accent));opacity:.35;}
+  .stp .dot{flex-shrink:0;width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;z-index:1;box-shadow:0 3px 8px rgba(30,96,145,.3);}
+  .stp .body{flex:1;background:#fbfdff;border:1px solid var(--border);border-radius:12px;padding:13px 18px;}
+  .stp .body b{color:var(--primary);}
+  .screen{background:#1b2733;color:#cfe0ee;border-radius:10px;padding:10px 14px;margin:9px 0;font-size:12.5px;font-family:Consolas,monospace;}
+  .screen .t{color:#7fd1e8;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:3px 12px;border-radius:7px;font-size:12px;font-weight:600;margin:2px;}
+  .btn.g{background:var(--completed);}.btn.o{background:var(--inprogress);}.btn.p{background:var(--holding);}.btn.r{background:#ef4444;}.btn.b{background:var(--checkin);}
+  .see{background:#eef6fb;border-left:3px solid var(--primary-light);padding:7px 12px;border-radius:0 7px 7px 0;font-size:13px;margin:6px 0;}
+  .tip{background:#e9f7ef;border-left:3px solid var(--completed);padding:7px 12px;border-radius:0 7px 7px 0;font-size:13px;margin:6px 0;}
+  .warn{background:#fdeaea;border-left:3px solid #ef4444;padding:7px 12px;border-radius:0 7px 7px 0;font-size:13px;margin:6px 0;}
+
+  .pill{display:inline-block;padding:2px 11px;border-radius:14px;font-size:11.5px;font-weight:600;color:#fff;}
+  .p-none{background:var(--none);}.p-checkin{background:var(--checkin);}.p-inprogress{background:var(--inprogress);}.p-holding{background:var(--holding);}.p-completed{background:var(--completed);}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.2px;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  thead th{background:var(--primary);color:#fff;text-align:left;padding:9px 12px;}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafcfe;}
+
+  /* scenario cards */
+  .scn{border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:10px;padding:14px 18px;margin:12px 0;background:#fff;}
+  .scn h4{margin:0 0 6px;color:var(--primary);}
+  .scn .seq{font-size:13px;}
+  .scn .seq span{color:var(--muted);}
+
+  @media(max-width:900px){.sidebar{display:none;}.content{padding:18px;}.personas{grid-template-columns:1fr;}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>เริ่มที่นี่</h2>
+    <a href="#personas">ผู้ใช้งานมีใครบ้าง</a>
+    <a href="#bigpic">ภาพรวมทั้งหมด (Big Picture)</a>
+    <h2>มุมมองรายผู้ใช้</h2>
+    <a href="#patient">① ผู้ป่วย / ผู้รับบริการ</a>
+    <a href="#staff">② เจ้าหน้าที่เคาน์เตอร์</a>
+    <a href="#tv">③ ผู้ดูแลจอ TV</a>
+    <a href="#admin">④ ผู้ดูแลระบบ (Admin)</a>
+    <a href="#mgr">⑤ ผู้บริหาร / Dashboard</a>
+    <h2>สถานการณ์จริง</h2>
+    <a href="#scenarios">เคสที่เจอหน้างาน</a>
+    <a href="#status">สถานะคิว (ภาษาคนใช้)</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>🧭 User Flow หน้างาน — มุมมองผู้ใช้จริง</h1>
+      <p>ภาพรวมการใช้งานระบบคิวแบบ <b>"ใครเห็นอะไร กดอะไร ทำตามขั้นตอนไหน"</b> ตั้งแต่ผู้ป่วยรับบัตรจนได้รับบริการเสร็จ</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">อ้างอิงการทำงานจริงของระบบ HAOS Queue (WebClient + TV) · 2026-06-26</p>
+    </div>
+
+    <!-- PERSONAS -->
+    <section id="personas">
+      <h2>👥 ผู้ใช้งานระบบมีใครบ้าง</h2>
+      <p>ระบบมีผู้ใช้ 5 กลุ่ม แต่ละกลุ่มเห็นหน้าจอและทำงานต่างกัน:</p>
+      <div class="personas">
+        <div class="persona pa"><div class="ico">👤</div><b>ผู้ป่วย</b><small>รับบัตรคิว, รอเรียก, ติดตามคิวผ่านมือถือ</small></div>
+        <div class="persona ps"><div class="ico">🧑‍💼</div><b>เจ้าหน้าที่เคาน์เตอร์</b><small>เรียกคิว, ให้บริการ, ส่งต่อ, พักคิว</small></div>
+        <div class="persona pt"><div class="ico">📺</div><b>ผู้ดูแลจอ TV</b><small>ตั้งค่าจอแสดงคิวในห้องรอ</small></div>
+        <div class="persona pad"><div class="ico">🛠️</div><b>ผู้ดูแลระบบ</b><small>ตั้งค่าห้อง/บริการ/ผู้ใช้/สิทธิ์</small></div>
+        <div class="persona pm"><div class="ico">📊</div><b>ผู้บริหาร</b><small>ดู Dashboard, รายงานภาพรวม</small></div>
+      </div>
+    </section>
+
+    <!-- BIG PICTURE -->
+    <section id="bigpic">
+      <h2>🗺️ ภาพรวมทั้งหมด (Big Picture)</h2>
+      <p>เส้นทางการใช้งานพร้อมกัน 3 ฝั่ง — ผู้ป่วย, เจ้าหน้าที่, จอ TV — ทำงานสอดประสานแบบ Real-time:</p>
+      <div class="lanes">
+        <div class="lane">
+          <div class="lane-label ll-p">👤 ผู้ป่วย</div>
+          <div class="lane-steps">
+            <div class="ls"><b>กดรับบัตรคิว</b>เลือกบริการ</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>รอเรียก</b>ดูจอ/มือถือ</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>เช็คอิน</b>หน้าแผนก</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>ถูกเรียก</b>ไปเคาน์เตอร์</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>รับบริการ</b>เสร็จ/ไปต่อ</div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-label ll-s">🧑‍💼 เจ้าหน้าที่</div>
+          <div class="lane-steps">
+            <div class="ls"><b>Login</b>เลือกเคาน์เตอร์</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>ดูคิวรอ</b>ในรายการ</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>กดเรียกคิว</b>ถัดไป</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>ให้บริการ</b></div>
+            <span class="arr">→</span>
+            <div class="ls"><b>เสร็จ/ส่งต่อ</b>/พัก</div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-label ll-t">📺 จอ TV</div>
+          <div class="lane-steps">
+            <div class="ls"><b>แสดงคิว</b>ที่กำลังเรียก</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>เด้ง+เสียง</b>เมื่อมีเรียกใหม่</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>โชว์ชื่อ</b>+เคาน์เตอร์</div>
+            <span class="arr">→</span>
+            <div class="ls"><b>คิวข้าม</b>ฝั่งขวาจอ</div>
+          </div>
+        </div>
+      </div>
+      <div class="tip">💡 ทุกครั้งที่เจ้าหน้าที่กดปุ่ม ระบบจะ <b>อัปเดตจอ TV + มือถือผู้ป่วย + หน้าจอเจ้าหน้าที่คนอื่นทันที</b> (ผ่าน SignalR) โดยไม่ต้องรีเฟรช</div>
+    </section>
+
+    <!-- PATIENT -->
+    <section id="patient">
+      <h2><span class="role r-patient">① ผู้ป่วย</span> เส้นทางผู้รับบริการ</h2>
+
+      <div class="steps">
+        <div class="stp"><div class="dot">1</div><div class="body">
+          <b>รับบัตรคิว</b> — ที่ตู้ KIOSK / จุดประชาสัมพันธ์
+          <p>เลือก <b>ห้อง/แผนก</b> ที่จะรับบริการ → เลือก <b>ประเภทบริการ</b> → ระบบออกเลขคิว (เช่น <code>A-001</code>) พร้อม QR Code บนบัตร</p>
+          <div class="screen"><span class="t">[ หน้าจอ ]</span> เลือกบริการ → กด "รับบัตรคิว" → พิมพ์บัตร: <b>คิว A-001</b> + QR</div>
+          <div class="see">👁️ ผู้ป่วยเห็น: เลขคิวของตัวเอง + QR สำหรับสแกนติดตาม</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">2</div><div class="body">
+          <b>รอเรียกคิว</b> — นั่งรอในห้องรอ
+          <p>ดูความคืบหน้าได้ 2 ทาง:</p>
+          <ul>
+            <li>📺 <b>จอ TV</b> ในห้องรอ — แสดงคิวที่กำลังเรียก + เคาน์เตอร์</li>
+            <li>📱 <b>มือถือ</b> — สแกน QR บนบัตร → เปิดหน้าติดตามคิว เห็นลำดับ/จำนวนคิวที่รออยู่ข้างหน้า อัปเดตสด</li>
+          </ul>
+          <div class="screen"><span class="t">[ มือถือ ]</span> คิวของคุณ: A-001 · สถานะ: <b>กำลังรอเรียก</b> · มีคิวรอก่อนหน้า: 3 คิว</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">3</div><div class="body">
+          <b>เช็คอินหน้าแผนก</b> <span class="muted">(บางที่ตั้งค่า AutoCheckin ข้ามขั้นนี้)</span>
+          <p>ยืนยันว่ามาถึงแล้ว — สแกน QR ที่ตู้ Check-in หรือเจ้าหน้าที่เช็คอินให้ → สถานะเปลี่ยนเป็น <span class="pill p-checkin">เข้าคิวแล้ว</span> พร้อมถูกเรียก</p>
+          <div class="warn">⚠️ ถ้าไม่เช็คอิน บางระบบจะไม่นำคิวเข้าคิวเรียกอัตโนมัติ</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">4</div><div class="body">
+          <b>ถูกเรียกคิว</b>
+          <p>เมื่อถึงคิว จอ TV จะ <b>เด้งเลขคิว + มีเสียงเรียก</b> พร้อมบอกเคาน์เตอร์ และมือถือแจ้งเตือนสถานะเป็น <span class="pill p-inprogress">กำลังให้บริการ</span></p>
+          <div class="screen"><span class="t">[ จอ TV ]</span> 🔔 เชิญคิว <b>A-001</b> ที่ช่องบริการ <b>3</b></div>
+          <div class="see">👁️ ถ้าไม่อยู่/ไม่ได้ยิน → เจ้าหน้าที่กด "เรียกซ้ำ" ได้ หรือคิวถูกข้ามไปแสดงฝั่ง "คิวข้าม" บนจอ</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">5</div><div class="body">
+          <b>รับบริการ → เสร็จ หรือ ไปแผนกต่อไป</b>
+          <ul>
+            <li>✅ <b>เสร็จสิ้น</b> — จบบริการ สถานะ <span class="pill p-completed">เสร็จสิ้น</span></li>
+            <li>➡️ <b>ส่งต่อ</b> — ถ้าต้องไปแผนก/บริการอื่น เจ้าหน้าที่กดส่งต่อ คิวเดิมจะถูกพาไปเข้าคิวที่จุดใหม่ (ไม่ต้องรับบัตรใหม่)</li>
+          </ul>
+          <div class="tip">💡 คิวเดียวเดินได้หลายจุดบริการ — ผู้ป่วยติดตามเส้นทางทั้งหมดได้จากมือถือ</div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- STAFF -->
+    <section id="staff">
+      <h2><span class="role r-staff">② เจ้าหน้าที่</span> หน้าจอเรียกคิว (ละเอียด)</h2>
+      <p>หน้าจอหลักที่ใช้ทั้งวันคือ <b>หน้าเรียกคิว</b> (<code>/queue/calling</code>) นี่คือขั้นตอนตั้งแต่เข้างานจนให้บริการ:</p>
+
+      <div class="steps">
+        <div class="stp"><div class="dot">1</div><div class="body">
+          <b>เข้าสู่ระบบ + เลือกเคาน์เตอร์</b>
+          <p>Login → เข้าหน้าเรียกคิว → เลือก <b>ห้อง/บริการ</b> ที่รับผิดชอบ → เลือก <b>ช่องบริการ (Service Point)</b> ที่จะนั่งประจำ</p>
+          <div class="screen"><span class="t">[ Control Panel ]</span> เลือกบริการ → เลือกช่อง: [ช่อง 1] [ช่อง 2] <b>[ช่อง 3 ✓]</b> ...</div>
+          <div class="warn">⚠️ ช่องที่เจ้าหน้าที่คนอื่นใช้อยู่จะถูกล็อก (กดไม่ได้) — กันเรียกซ้อน</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">2</div><div class="body">
+          <b>ดูรายการคิว แบ่งตามแท็บสถานะ</b>
+          <p>หน้าจอแบ่งคิวเป็นแท็บให้เห็นภาพ:</p>
+          <table>
+            <thead><tr><th>แท็บ</th><th>คือคิวที่...</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pill p-none">รอเช็คอิน</span></td><td>ออกบัตรแล้วแต่ยังไม่ยืนยันตัว</td></tr>
+              <tr><td><span class="pill p-checkin">รอเรียก</span></td><td>เช็คอินแล้ว พร้อมเรียก (รวมคิวพัก)</td></tr>
+              <tr><td><span class="pill p-inprogress">กำลังบริการ</span></td><td>กำลังให้บริการอยู่</td></tr>
+              <tr><td><span class="pill p-completed">เสร็จสิ้น</span></td><td>บริการเสร็จแล้ว</td></tr>
+            </tbody>
+          </table>
+          <div class="see">👁️ ตารางแสดง: เลขคิว, ประเภทบริการ, เวลาเช็คอิน, เวลารอ, ช่องบริการ, หมายเหตุ — ค้นหา/กรองตามกลุ่มบริการได้</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">3</div><div class="body">
+          <b>กดเรียกคิวถัดไป</b> <span class="btn b">เรียกคิวถัดไป</span>
+          <p>ระบบดึงคิวที่รอเก่าสุด (FIFO) มาแสดงในวิดเจ็ตใหญ่ด้านบน → จอ TV เด้งเลข + เสียงเรียก (กระพริบ 10 วินาที)</p>
+          <p>หรือเลือกเรียก <b>คิวเฉพาะเจาะจง</b> จากในตารางก็ได้</p>
+          <div class="screen"><span class="t">[ วิดเจ็ตด้านบน ]</span> กำลังเรียก: <b>A-001</b> — ช่อง 3</div>
+        </div></div>
+
+        <div class="stp"><div class="dot">4</div><div class="body">
+          <b>ระหว่างให้บริการ — เลือกปุ่มที่ต้องการ</b>
+          <p>เมื่อผู้ป่วยมาถึงและเริ่มบริการ มีปุ่มให้เลือก:</p>
+          <ul>
+            <li><span class="btn r">เรียกซ้ำ</span> ผู้ป่วยไม่มา/ไม่ได้ยิน → ประกาศเรียกเลขเดิมอีกครั้ง</li>
+            <li><span class="btn p">พักคิว</span> ขอพัก/ติดขัด → เลือกเหตุผล (หลัก+ย่อย) คิวไปอยู่สถานะ <span class="pill p-holding">พักคิว</span></li>
+            <li><span class="btn o">ส่งต่อ</span> ต้องไปแผนก/บริการอื่น → เลือกปลายทาง + ใส่หมายเหตุ คิวไปเข้าคิวที่จุดใหม่</li>
+            <li><span class="btn g">เสร็จสิ้น</span> จบบริการ → คิวปิด สถานะ <span class="pill p-completed">เสร็จสิ้น</span></li>
+          </ul>
+        </div></div>
+
+        <div class="stp"><div class="dot">5</div><div class="body">
+          <b>เครื่องมือเสริม</b>
+          <ul>
+            <li><span class="btn">สแกน QR / ค้นคิว</span> สแกนบัตรผู้ป่วยเพื่อเช็คอิน/ดึงข้อมูลคิว</li>
+            <li>กรองตาม <b>กลุ่มบริการ</b> เพื่อโฟกัสเฉพาะงานที่รับผิดชอบ</li>
+          </ul>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- TV -->
+    <section id="tv">
+      <h2><span class="role r-tv">③ ผู้ดูแลจอ TV</span> ตั้งค่าจอแสดงคิว</h2>
+      <p>ทำครั้งเดียวตอนติดตั้งจอในห้องรอ (แอป <code>HAOS.QueueTV</code> แยกต่างหาก):</p>
+      <div class="steps">
+        <div class="stp"><div class="dot">1</div><div class="body"><b>Login จอ</b> — ใส่ username/password (เก็บ token ในเครื่องจอ)</div></div>
+        <div class="stp"><div class="dot">2</div><div class="body">
+          <b>ตั้งค่ารายการที่จะแสดง</b>
+          <p>เลือกว่าจอนี้จะโชว์ <b>บริการ + ห้อง + ช่องบริการ (เคาน์เตอร์)</b> ใดบ้าง → บันทึก</p>
+          <div class="see">👁️ ตั้งได้ว่าจอ 1 ใบจะแสดงหลายแผนกพร้อมกันก็ได้</div>
+        </div></div>
+        <div class="stp"><div class="dot">3</div><div class="body">
+          <b>หน้าจอแสดงผลหลัก</b> — ปล่อยให้ทำงานอัตโนมัติ
+          <table>
+            <thead><tr><th>ส่วน</th><th>แสดงอะไร</th></tr></thead>
+            <tbody>
+              <tr><td><b>◀ ฝั่งซ้าย</b></td><td>ช่องบริการแต่ละช่อง + เลขคิวปัจจุบัน + ชื่อผู้รับบริการ — <b>กระพริบ 10 วิ + เสียง</b> เมื่อมีเรียกใหม่</td></tr>
+              <tr><td><b>ฝั่งขวา ▶</b></td><td>คิวที่ถูกข้าม (เรียกแล้วไม่มา)</td></tr>
+            </tbody>
+          </table>
+          <div class="tip">💡 มีปุ่มเปิด/ปิดเสียงเรียก · จอจะอัปเดตเองทุกครั้งที่มีการเรียกคิว (Real-time)</div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="admin">
+      <h2><span class="role r-admin">④ ผู้ดูแลระบบ</span> ตั้งค่าระบบ (ทำก่อนเปิดใช้งาน)</h2>
+      <p>งานตั้งค่าเริ่มต้นและดูแลต่อเนื่อง — เข้าเมนู Admin / Master:</p>
+      <table>
+        <thead><tr><th>เมนู</th><th>ตั้งค่าอะไร</th><th>ทำไมต้องมี</th></tr></thead>
+        <tbody>
+          <tr><td><b>ห้อง / จุดบริการ</b></td><td>ห้อง, แผนก, ช่องบริการ (เคาน์เตอร์)</td><td>คิวต้องรู้ว่าวิ่งไปจุดไหน</td></tr>
+          <tr><td><b>ประเภทบริการ</b></td><td>รายการบริการที่ผู้ป่วยเลือกตอนรับบัตร</td><td>กำหนดตัวเลือกบนตู้ KIOSK</td></tr>
+          <tr><td><b>เหตุผลพักคิว</b></td><td>เหตุผลหลัก + เหตุผลย่อย</td><td>ให้เจ้าหน้าที่เลือกตอนกดพักคิว</td></tr>
+          <tr><td><b>ตั้งค่าเวลา (Dashboard)</b></td><td>เกณฑ์เวลารอ ปกติ/ปานกลาง (สีเตือน)</td><td>ใช้แสดงสีสถานะบน Dashboard</td></tr>
+          <tr><td><b>ผู้ใช้ / กลุ่มสิทธิ์</b></td><td>สร้างผู้ใช้, กำหนดสิทธิ์ตามบทบาท</td><td>ควบคุมว่าใครทำอะไรได้</td></tr>
+        </tbody>
+      </table>
+      <div class="tip">💡 ตั้งค่าให้ห้องเป็น <b>AutoCheckin</b> ได้ ถ้าไม่ต้องการให้ผู้ป่วยเช็คอินเอง (คิวเข้าสถานะรอเรียกทันทีหลังออกบัตร)</div>
+    </section>
+
+    <!-- MGR -->
+    <section id="mgr">
+      <h2><span class="role r-mgr">⑤ ผู้บริหาร</span> Dashboard & รายงาน</h2>
+      <ul>
+        <li>📊 <b>Dashboard</b> — ดูภาพรวมจำนวนคิว/เวลารอแต่ละห้อง พร้อมแถบสีเตือน (ปกติ/ปานกลาง/นาน) ตามเกณฑ์ที่ Admin ตั้ง</li>
+        <li>📑 <b>รายงาน</b> — ออกรายงานเป็น PDF (สรุปคิว, เวลาให้บริการ ฯลฯ)</li>
+      </ul>
+      <div class="see">👁️ ใช้ดูประสิทธิภาพการให้บริการ — จุดไหนคิวยาว เวลารอเกินเกณฑ์ เพื่อบริหารกำลังคน</div>
+    </section>
+
+    <!-- SCENARIOS -->
+    <section id="scenarios">
+      <h2>🎬 สถานการณ์จริงที่เจอหน้างาน</h2>
+
+      <div class="scn"><h4>เคส 1 · ปกติ (Happy Path)</h4>
+        <div class="seq">รับบัตร <span>→</span> รอ <span>→</span> เช็คอิน <span>→</span> เจ้าหน้าที่เรียก <span>→</span> ให้บริการ <span>→</span> กดเสร็จสิ้น ✅</div>
+      </div>
+
+      <div class="scn"><h4>เคส 2 · เรียกแล้วผู้ป่วยไม่มา</h4>
+        <div class="seq">เจ้าหน้าที่กด <span class="btn r">เรียกซ้ำ</span> 1–2 ครั้ง <span>→</span> ยังไม่มา <span>→</span> ข้ามไปเรียกคิวถัดไป <span>→</span> คิวที่ข้ามไปแสดงฝั่งขวาของจอ TV (กลับมาเรียกใหม่ได้ภายหลัง)</div>
+      </div>
+
+      <div class="scn"><h4>เคส 3 · ต้องไปหลายแผนก (ส่งต่อ)</h4>
+        <div class="seq">ให้บริการที่แผนก A <span>→</span> กด <span class="btn o">ส่งต่อ</span> เลือกแผนก B <span>→</span> คิวเดิมไปเข้าคิวที่ B อัตโนมัติ (ผู้ป่วยไม่ต้องรับบัตรใหม่) <span>→</span> ติดตามเส้นทางได้จากมือถือ</div>
+      </div>
+
+      <div class="scn"><h4>เคส 4 · เจ้าหน้าที่ขอพัก/ติดเคส</h4>
+        <div class="seq">กด <span class="btn p">พักคิว</span> เลือกเหตุผล <span>→</span> คิวเข้าสถานะ <span class="pill p-holding">พักคิว</span> <span>→</span> กลับมาเรียกต่อเมื่อพร้อม</div>
+      </div>
+
+      <div class="scn"><h4>เคส 5 · ผู้ป่วยติดตามคิวเองผ่านมือถือ</h4>
+        <div class="seq">สแกน QR บนบัตร <span>→</span> เปิดหน้าติดตาม <span>→</span> เห็นลำดับคิว + สถานะสด <span>→</span> ไม่ต้องเฝ้าจอ TV ตลอด</div>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section id="status">
+      <h2>🏷️ สถานะคิว (อธิบายแบบภาษาคนใช้งาน)</h2>
+      <table>
+        <thead><tr><th>สถานะ</th><th>แปลว่า (สำหรับผู้ใช้)</th><th>เกิดเมื่อ</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill p-none">รอเช็คอิน</span></td><td>ได้บัตรแล้ว แต่ยังไม่ยืนยันว่ามาถึง</td><td>เพิ่งกดรับบัตร</td></tr>
+          <tr><td><span class="pill p-checkin">รอเรียก</span></td><td>พร้อมแล้ว รออยู่ในคิว</td><td>เช็คอินเสร็จ</td></tr>
+          <tr><td><span class="pill p-inprogress">กำลังบริการ</span></td><td>ถูกเรียกแล้ว กำลังรับบริการ</td><td>เจ้าหน้าที่กดเรียก</td></tr>
+          <tr><td><span class="pill p-holding">พักคิว</span></td><td>ถูกพักไว้ชั่วคราว</td><td>เจ้าหน้าที่กดพักคิว</td></tr>
+          <tr><td><span class="pill p-completed">เสร็จสิ้น</span></td><td>รับบริการเรียบร้อย</td><td>กดเสร็จ/ส่งต่อ</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>User Flow หน้างาน · ระบบคิว HAOS Queue · มุมมองผู้ใช้จริง · 2026-06-26</footer>
+  </main>
+</div>
+</body>
+</html>
