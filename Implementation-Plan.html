@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implementation Plan — แผนพัฒนาระบบ Smart Queue</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--bg:#f4f7fa;--card:#fff;
+    --text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;--code-bg:#f0f4f8;--his:#7b2cbf;
+    --p0:#64748b;--p1:#0ea5e9;--p2:#7b2cbf;--p3:#d97706;--p4:#16a34a;--p5:#dc2626;
+    --rL:#ef4444;--rM:#f59e0b;--rS:#22c55e;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.66;font-size:14.5px;}
+  .layout{display:flex;max-width:1440px;margin:0 auto;}
+  .sidebar{width:270px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:22px 16px;}
+  .sidebar h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px;}
+  .sidebar a{display:block;padding:6px 10px;border-radius:7px;color:var(--text);text-decoration:none;font-size:13px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .content{flex:1;padding:32px 42px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--accent));color:#fff;border-radius:18px;padding:34px 38px;margin-bottom:26px;box-shadow:0 12px 32px rgba(30,96,145,.26);}
+  .hero h1{margin:0 0 8px;font-size:27px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14.5px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:26px 30px;margin-bottom:20px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 16px;font-size:20px;color:var(--primary);padding-bottom:11px;border-bottom:2px solid var(--code-bg);}
+  h3{color:var(--primary-light);font-size:16px;margin:20px 0 9px;}
+  p{margin:8px 0;}ul,ol{margin:8px 0;padding-left:22px;}li{margin:5px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12.3px;}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.2px;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  thead th{background:var(--primary);color:#fff;text-align:left;padding:9px 12px;}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafcfe;}
+
+  .note{background:#fff8e6;border-left:4px solid var(--rM);padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13.6px;}
+  .note.tip{background:#e9f7ef;border-left-color:var(--rS);}
+  .note.crit{background:#fdeaea;border-left-color:var(--rL);}
+
+  /* timeline / gantt */
+  .gantt{margin:16px 0;}
+  .grow{display:flex;align-items:center;gap:10px;margin:7px 0;}
+  .glabel{width:230px;flex-shrink:0;font-size:13px;font-weight:600;}
+  .gbar-wrap{flex:1;background:#eef2f6;border-radius:8px;height:30px;position:relative;overflow:hidden;}
+  .gbar{position:absolute;height:100%;border-radius:8px;display:flex;align-items:center;padding:0 10px;color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap;}
+  .g0{background:var(--p0);}.g1{background:var(--p1);}.g2{background:var(--p2);}.g3{background:var(--p3);}.g4{background:var(--p4);}.g5{background:var(--p5);}
+  .gscale{display:flex;margin-left:240px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:4px;}
+  .gscale span{flex:1;text-align:center;}
+
+  /* phase cards */
+  .phase{border:1px solid var(--border);border-radius:14px;margin:16px 0;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.05);}
+  .phase-head{padding:14px 20px;color:#fff;display:flex;align-items:center;gap:14px;}
+  .phase-head .pid{background:rgba(255,255,255,.25);border-radius:9px;padding:4px 12px;font-weight:800;font-size:15px;}
+  .phase-head .ptitle{font-size:16px;font-weight:700;}
+  .phase-head .pgoal{font-size:12.5px;opacity:.92;font-weight:400;}
+  .ph0 .phase-head{background:linear-gradient(135deg,#475569,#64748b);}
+  .ph1 .phase-head{background:linear-gradient(135deg,#0284c7,#0ea5e9);}
+  .ph2 .phase-head{background:linear-gradient(135deg,#7b2cbf,#9d4edd);}
+  .ph3 .phase-head{background:linear-gradient(135deg,#d97706,#f59e0b);}
+  .ph4 .phase-head{background:linear-gradient(135deg,#15803d,#22c55e);}
+  .ph5 .phase-head{background:linear-gradient(135deg,#b91c1c,#dc2626);}
+  .phase-body{padding:16px 22px;}
+  .phase-body h4{margin:12px 0 6px;font-size:13.5px;color:var(--primary);}
+  .phase-body h4:first-child{margin-top:0;}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:820px){.pgrid{grid-template-columns:1fr;}}
+  .chips span{display:inline-block;background:#eef6fb;color:var(--primary);border:1px solid #d6e8f3;border-radius:7px;padding:2px 9px;font-size:12px;margin:2px;}
+
+  .risk{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;color:#fff;}
+  .r-L{background:var(--rL);}.r-M{background:var(--rM);}.r-S{background:var(--rS);}
+  .dep{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;background:#f3e9fc;color:var(--his);}
+  .tor{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;background:#fef3e2;color:#b45309;}
+
+  @media(max-width:900px){.sidebar{display:none;}.content{padding:18px;}.glabel{width:120px;}.gscale{margin-left:130px;}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>สารบัญ</h2>
+    <a href="#overview">1. ภาพรวม & หลักการ</a>
+    <a href="#timeline">2. Timeline ภาพรวม</a>
+    <a href="#p0">เฟส 0 · เตรียมการ</a>
+    <a href="#p1">เฟส 1 · Core + Routing</a>
+    <a href="#p2">เฟส 2 · เชื่อม HIS</a>
+    <a href="#p3">เฟส 3 · นัดหมาย + LINE</a>
+    <a href="#p4">เฟส 4 · ชำระเงิน + เภสัช</a>
+    <a href="#p5">เฟส 5 · ส่งมอบ</a>
+    <a href="#deps">3. Dependency & Critical Path</a>
+    <a href="#risk">4. ความเสี่ยง & ข้อแนะนำ</a>
+    <a href="#tormap">5. TOR → เฟส</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>🗓️ Implementation Plan — แผนพัฒนาระบบ Smart Queue</h1>
+      <p>แผนพัฒนาทั้งหมด แบ่ง 6 เฟส ตั้งแต่ต่อยอดระบบคิวเดิม → ตอบ TOR โรงพยาบาลครบ</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">อ้างอิงเอกสาร Gap Analysis + HIS Integration + Service Routing · 2026-06-26</p>
+    </div>
+
+    <!-- 1 -->
+    <section id="overview">
+      <h2>1. ภาพรวม & หลักการวางแผน</h2>
+      <p>แผนนี้ยึด 3 หลักการเพื่อลดความเสี่ยงและส่งมอบคุณค่าเร็ว:</p>
+      <ol>
+        <li><b>MVP-first / ส่งมอบเป็นเฟส</b> — เปิดใช้ส่วนที่ทำได้ก่อน ไม่รอครบทุกอย่าง</li>
+        <li><b>แยกงานที่ไม่พึ่ง HIS ออกมาทำก่อน</b> — เฟส 1 เดินได้ทันทีโดยไม่ต้องรอสเปก HIS (ลด blocking)</li>
+        <li><b>งานที่พึ่งระบบภายนอก (HIS/สปสช./LINE/Payment) = critical path</b> — เริ่มเคลียร์สเปกตั้งแต่เฟส 0</li>
+      </ol>
+      <div class="note tip"><b>จุดแข็งที่มีอยู่แล้ว (ไม่ต้องสร้างใหม่):</b> แกนเรียกคิว, เช็คอิน, Forward, จอ TV, Dashboard, SignalR real-time, report engine — เฟส 1 ส่วนใหญ่เป็นการ <b>ต่อยอด</b> ไม่ใช่สร้างจากศูนย์</div>
+    </section>
+
+    <!-- 2 -->
+    <section id="timeline">
+      <h2>2. Timeline ภาพรวม (ประมาณการคร่าว ๆ)</h2>
+      <div class="gantt">
+        <div class="grow"><div class="glabel">เฟส 0 · เตรียมการ/ออกแบบ</div><div class="gbar-wrap"><div class="gbar g0" style="left:0;width:18%;">~3–4 สัปดาห์</div></div></div>
+        <div class="grow"><div class="glabel">เฟส 1 · Core + Routing (ไม่พึ่ง HIS)</div><div class="gbar-wrap"><div class="gbar g1" style="left:10%;width:32%;">~6–8 สัปดาห์</div></div></div>
+        <div class="grow"><div class="glabel">เฟส 2 · เชื่อม HIS (แกน)</div><div class="gbar-wrap"><div class="gbar g2" style="left:32%;width:30%;">~6–8 สัปดาห์</div></div></div>
+        <div class="grow"><div class="glabel">เฟส 3 · นัดหมาย + LINE OA</div><div class="gbar-wrap"><div class="gbar g3" style="left:55%;width:26%;">~5–7 สัปดาห์</div></div></div>
+        <div class="grow"><div class="glabel">เฟส 4 · ชำระเงิน + เภสัช</div><div class="gbar-wrap"><div class="gbar g4" style="left:70%;width:28%;">~6–8 สัปดาห์</div></div></div>
+        <div class="grow"><div class="glabel">เฟส 5 · ติดตั้ง/อบรม/Go-live</div><div class="gbar-wrap"><div class="gbar g5" style="left:88%;width:12%;">ต่อเนื่อง</div></div></div>
+        <div class="gscale"><span>เริ่ม</span><span></span><span></span><span></span><span></span><span>~9–11 เดือน</span></div>
+      </div>
+      <div class="note crit"><b>⚠️ เรื่องไทม์ไลน์ 120 วันใน TOR:</b> ขอบเขตเต็ม (HIS + นัดหมาย + ชำระเงิน + Tele-pharmacy) <b>ใหญ่กว่า 120 วันมาก</b> — กรอบ 120 วันสมจริงเฉพาะ "ฮาร์ดแวร์ + ระบบคิวแกน (เฟส 0–1/บางส่วนเฟส 2)" ควรเจรจาขอบเขต/แบ่งเฟสส่งมอบในสัญญาให้ชัด หรือกำหนด MVP ที่ส่งใน 120 วันแล้วเฟสที่เหลือเป็นงวดถัดไป</div>
+      <p class="muted">* ระยะเวลาเป็นค่าประมาณสำหรับวางแผนเท่านั้น ขึ้นกับขนาดทีม, ความพร้อมของสเปก HIS, และ scope ที่ตกลง — เฟสสามารถทำเหลื่อม/ขนานกันได้บางส่วน</p>
+    </section>
+
+    <!-- PHASE 0 -->
+    <section id="p0">
+      <div class="phase ph0">
+        <div class="phase-head"><span class="pid">0</span><div><div class="ptitle">เตรียมการ & ออกแบบ (Foundation / Discovery)</div><div class="pgoal">วางรากฐาน เคลียร์ dependency ภายนอก ก่อนลงมือ</div></div></div>
+        <div class="phase-body">
+          <div class="pgrid">
+            <div>
+              <h4>งานหลัก</h4>
+              <ul>
+                <li>เคลียร์สเปก HIS (ตาม Checklist 10 ข้อในเอกสาร HIS Integration)</li>
+                <li>ยืนยันช่องทาง สปสช./บัตรประชาชน/LINE OA/Payment</li>
+                <li>ออกแบบสถาปัตยกรรม + ตั้ง API Gateway + Environment (dev/test/prod)</li>
+                <li>จัดหาฮาร์ดแวร์ (KIOSK, Check-in, UPS) — <b>สั่งซื้อแต่เนิ่น ๆ</b></li>
+                <li>ออกแบบ DB ส่วนเพิ่ม (Patient/Visit ref, Routing, OrderFlag)</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Deliverables</h4>
+              <div class="chips"><span>API Contract ตกลงแล้ว</span><span>สถาปัตยกรรม final</span><span>Hardware PO</span><span>แผน sprint</span></div>
+              <h4>Dependency</h4>
+              <span class="dep">HIS vendor spec</span> <span class="dep">สปสช. access</span> <span class="dep">LINE channel</span>
+              <h4>ความเสี่ยง</h4>
+              <span class="risk r-L">สูง</span> ถ้า HIS ไม่พร้อมให้สเปก = block ทั้งโครงการ
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHASE 1 -->
+    <section id="p1">
+      <div class="phase ph1">
+        <div class="phase-head"><span class="pid">1</span><div><div class="ptitle">Core Queue + Service Routing (ไม่พึ่ง HIS)</div><div class="pgoal">ต่อยอดระบบคิวเดิมให้ใช้งานหน้างานได้ก่อน — เดินได้ทันที</div></div></div>
+        <div class="phase-body">
+          <div class="pgrid">
+            <div>
+              <h4>งานหลัก</h4>
+              <ul>
+                <li><b>Service Routing Engine</b> โหมด Always + Manual + หน้าตั้งค่ากฎ (<code>TbServiceRoute</code>)</li>
+                <li>เพิ่ม <b>ระบบความเร่งด่วน/Priority</b> + คิวลัด (เตรียมไว้สำหรับ ER/Triage)</li>
+                <li>ปรับ <b>บัตรคิว/ใบนำทาง</b> (ต่อยอด report engine) + ปรับแต่ง layout โดย admin</li>
+                <li><b>หน้าจอ KIOSK กดบัตร</b> + ตู้ <b>Check-in</b> + <b>อ่านบัตรประชาชนในเครื่อง</b> (ได้ข้อมูล+รูป โดยไม่ต้องพึ่ง HIS)</li>
+                <li>เพิ่มฟิลด์ master mapping (<code>HisClinicCode</code>, ที่ว่างสำหรับ <code>HN/VN</code>)</li>
+                <li>ปรับจอ TV/Dashboard ตามสเปก TOR (แถบสีแผนก, สถานะห้องยา/การเงิน)</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Deliverables</h4>
+              <div class="chips"><span>Routing ใช้งานได้</span><span>KIOSK/Check-in UI</span><span>อ่านบัตร ปชช.</span><span>บัตรคิว/ใบนำทาง</span></div>
+              <h4>Dependency</h4>
+              <span class="dep">SDK เครื่องอ่านบัตร</span> <span class="dep">ฮาร์ดแวร์ (เฟส 0)</span>
+              <h4>ปิดข้อ TOR</h4>
+              <span class="tor">3.3 (บางส่วน)</span> <span class="tor">3.4</span> <span class="tor">3.6.1/3.6.10</span> <span class="tor">3.10/3.11 (SW)</span>
+              <h4>ความเสี่ยง</h4>
+              <span class="risk r-S">ต่ำ</span> ต่อยอดของเดิมเป็นหลัก
+            </div>
+          </div>
+          <div class="note tip">💡 จบเฟสนี้ = ระบบคิว "เดินเส้นทางอัตโนมัติ" + ออกบัตรจาก KIOSK + อ่านบัตรประชาชนได้ — <b>ใช้งานจริงได้แล้วแม้ยังไม่เชื่อม HIS</b> (เหมาะส่งมอบใน 120 วัน)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHASE 2 -->
+    <section id="p2">
+      <div class="phase ph2">
+        <div class="phase-head"><span class="pid">2</span><div><div class="ptitle">เชื่อมต่อ HIS (แกนกลาง)</div><div class="pgoal">ผูกคิวเข้ากับผู้ป่วย/Visit จริง + สิทธิ์ + routing ตาม order</div></div></div>
+        <div class="phase-body">
+          <div class="pgrid">
+            <div>
+              <h4>งานหลัก</h4>
+              <ul>
+                <li>API Gateway + Security (OAuth2/mTLS/Audit) production</li>
+                <li><b>ค้นผู้ป่วย (CID→HN)</b> + <b>เปิด Visit (VN)</b> หรือ reverse-flow รับ VN จาก HIS</li>
+                <li>ตรวจสอบ <b>สิทธิ์ สปสช.</b> + แสดงสิทธิ์ให้เลือก</li>
+                <li><b>Service Routing เงื่อนไข HIS</b> — รับ <code>order-created</code> (DRUG/LAB/XRAY) → เพิ่มจุดถัดไปอัตโนมัติ</li>
+                <li>ลงทะเบียนผู้ป่วยใหม่ (reverse-flow) + ดึงนัดวันนี้ (ถ้ามี API)</li>
+                <li>Deep-link/SSO ไปหน้า HIS สำหรับข้อมูลคลินิก/เภสัช</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Deliverables</h4>
+              <div class="chips"><span>Patient/Visit linkage</span><span>สปสช. verify</span><span>Routing+HIS</span><span>Gateway prod</span></div>
+              <h4>Dependency</h4>
+              <span class="dep">HIS API พร้อมจริง</span> <span class="dep">NHSO access</span> <span class="dep">เฟส 0 spec</span>
+              <h4>ปิดข้อ TOR</h4>
+              <span class="tor">3.1</span> <span class="tor">3.2</span> <span class="tor">3.6 (เต็ม)</span> <span class="tor">3.3.7 บางส่วน</span>
+              <h4>ความเสี่ยง</h4>
+              <span class="risk r-L">สูง</span> ขึ้นกับความพร้อม HIS/NHSO
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHASE 3 -->
+    <section id="p3">
+      <div class="phase ph3">
+        <div class="phase-head"><span class="pid">3</span><div><div class="ptitle">นัดหมาย + LINE OA + แจ้งเตือน</div><div class="pgoal">เพิ่มช่องทางผู้ป่วยและการสื่อสาร</div></div></div>
+        <div class="phase-body">
+          <div class="pgrid">
+            <div>
+              <h4>งานหลัก</h4>
+              <ul>
+                <li><b>โมดูลนัดหมาย</b> ฝั่งเจ้าหน้าที่ (จองตามแพทย์/แผนก/เวลา, ยืนยัน)</li>
+                <li><b>นัดหมายออนไลน์</b> ผู้ป่วย (ผูก LINE OA/เว็บไซต์, ยืนยันตัวตน, ดูประวัติ QR)</li>
+                <li><b>LINE OA integration</b> — แจ้งเตือนการรักษา/นัด/ผล, Flex Message, ตั้งเวลา, Auto message</li>
+                <li>activate คิวอัตโนมัติเมื่อมีนัด (webhook <code>appointment-created</code>)</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Deliverables</h4>
+              <div class="chips"><span>Appointment module</span><span>Online booking</span><span>LINE notify</span></div>
+              <h4>Dependency</h4>
+              <span class="dep">LINE OA channel</span> <span class="dep">HIS appointment API</span>
+              <h4>ปิดข้อ TOR</h4>
+              <span class="tor">3.5</span> <span class="tor">3.7</span> <span class="tor">3.1.9</span>
+              <h4>ความเสี่ยง</h4>
+              <span class="risk r-M">กลาง</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHASE 4 -->
+    <section id="p4">
+      <div class="phase ph4">
+        <div class="phase-head"><span class="pid">4</span><div><div class="ptitle">ชำระเงินออนไลน์ + เภสัช + Smart Dispensing + Tele-pharmacy</div><div class="pgoal">โมดูลปลายน้ำ การเงินและการจ่ายยา</div></div></div>
+        <div class="phase-body">
+          <div class="pgrid">
+            <div>
+              <h4>งานหลัก</h4>
+              <ul>
+                <li><b>ชำระเงินออนไลน์</b> (Payment Gateway third party) + รับ webhook <code>payment-completed</code></li>
+                <li><b>Smart Dispensing</b> — ส่งคิวจุดจัดยาอัตโนมัติ, เลือกรับเอง/ส่งบ้าน, Pickup Code, ติดตามสถานะ</li>
+                <li><b>Tele-pharmacy</b> — เติมยา refill, ยืนยันตัวตน, ส่งคิวจัดยา, แจ้ง LINE + Pickup Code</li>
+                <li>ฟังก์ชันเรียกคิวห้องยา (ผ่าน deep-link HIS: ประวัติยา/แพ้ยา/Vital/Note)</li>
+                <li>รายงานจัดส่งยา/ชำระเงินรายวัน-รายเดือน</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Deliverables</h4>
+              <div class="chips"><span>Online payment</span><span>Smart Dispensing</span><span>Tele-pharmacy</span><span>รายงาน</span></div>
+              <h4>Dependency</h4>
+              <span class="dep">Payment GW</span> <span class="dep">HIS billing/pharmacy</span> <span class="dep">พาร์ทเนอร์ส่งยา</span>
+              <h4>ปิดข้อ TOR</h4>
+              <span class="tor">3.8</span> <span class="tor">3.9</span> <span class="tor">3.3.9</span>
+              <h4>ความเสี่ยง</h4>
+              <span class="risk r-L">สูง</span> พึ่งหลายระบบภายนอก
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHASE 5 -->
+    <section id="p5">
+      <div class="phase ph5">
+        <div class="phase-head"><span class="pid">5</span><div><div class="ptitle">ติดตั้ง · อบรม · UAT · Go-live · รับประกัน</div><div class="pgoal">ส่งมอบและดูแลต่อเนื่อง (ทำคู่ขนานทุกเฟส)</div></div></div>
+        <div class="phase-body">
+          <div class="pgrid">
+            <div>
+              <h4>งานหลัก</h4>
+              <ul>
+                <li>ติดตั้งฮาร์ดแวร์ KIOSK/Check-in/UPS หน้างาน</li>
+                <li>UAT กับผู้ใช้จริง + ปรับแก้</li>
+                <li>อบรมเจ้าหน้าที่ + ส่งมอบคู่มือ (ไทย/Quick/Technical)</li>
+                <li>Go-live + ดูแลช่วงรับประกัน 1 ปี (Remote support ในเวลาราชการ)</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Deliverables</h4>
+              <div class="chips"><span>ติดตั้งครบ</span><span>UAT ผ่าน</span><span>คู่มือ 3 ชุด</span><span>อบรม</span><span>SLA support</span></div>
+              <h4>ปิดข้อ TOR</h4>
+              <span class="tor">4 (UPS)</span> <span class="tor">5/6 เงื่อนไข</span> <span class="tor">120 วัน</span>
+              <h4>ความเสี่ยง</h4>
+              <span class="risk r-M">กลาง</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEPS -->
+    <section id="deps">
+      <h2>3. Dependency & Critical Path</h2>
+      <p><b>เส้นทางวิกฤต (Critical Path):</b> งานที่ต้องเริ่มก่อนและบล็อกงานอื่นมากที่สุด</p>
+      <table>
+        <thead><tr><th>Dependency ภายนอก</th><th>กระทบเฟส</th><th>ถ้าไม่พร้อม</th></tr></thead>
+        <tbody>
+          <tr><td><b>HIS API spec + sandbox</b></td><td>2, 3, 4</td><td>เลื่อนเฟส 2 เป็นต้นไป — เฟส 1 ยังเดินได้</td></tr>
+          <tr><td><b>NHSO (สปสช.) access</b></td><td>2</td><td>ใช้เครื่อง สปสช. แยก/เลือกสิทธิ์เอง (ทางเลือกในเอกสาร HIS)</td></tr>
+          <tr><td><b>LINE OA channel</b></td><td>3</td><td>เลื่อนแจ้งเตือน — โมดูลนัดหมายในระบบยังทำได้</td></tr>
+          <tr><td><b>Payment Gateway</b></td><td>4</td><td>ใช้แคชเชียร์เดิม + manual mark paid</td></tr>
+          <tr><td><b>ฮาร์ดแวร์ KIOSK/Check-in</b></td><td>1, 5</td><td>พัฒนา UI บนเครื่องทดสอบไปก่อน รอของมาติดตั้ง</td></tr>
+        </tbody>
+      </table>
+      <div class="note tip"><b>กลยุทธ์ลดความเสี่ยง:</b> เริ่ม <b>เฟส 0 (เคลียร์สเปก HIS) + เฟส 1 (งานไม่พึ่ง HIS)</b> พร้อมกันตั้งแต่วันแรก — ทำให้มีของส่งมอบเร็วและไม่เสียเวลารอ HIS</div>
+    </section>
+
+    <!-- RISK -->
+    <section id="risk">
+      <h2>4. ความเสี่ยงหลัก & ข้อแนะนำ</h2>
+      <table>
+        <thead><tr><th>ความเสี่ยง</th><th>ผลกระทบ</th><th>วิธีรับมือ</th></tr></thead>
+        <tbody>
+          <tr><td>HIS ไม่เปิด API หรือเปิดช้า</td><td><span class="risk r-L">สูง</span></td><td>ระบุใน TOR/สัญญาว่าโรงพยาบาลต้องจัดเตรียม API + ใช้ทางเลือก (reverse-flow/manual/deep-link)</td></tr>
+          <tr><td>Scope เต็มไม่ทันใน 120 วัน</td><td><span class="risk r-L">สูง</span></td><td>แบ่งส่งมอบเป็นเฟส — MVP (เฟส 0–1) ใน 120 วัน เฟสที่เหลือเป็นงวดถัดไป</td></tr>
+          <tr><td>ข้อมูลสุขภาพ/PDPA</td><td><span class="risk r-M">กลาง</span></td><td>Deep-link แทนดึงข้อมูล, audit log, data minimization (ดูเอกสาร HIS §7)</td></tr>
+          <tr><td>Routing วนลูปไม่รู้จบ</td><td><span class="risk r-M">กลาง</span></td><td>กลไก mark order completed + จำกัดรอบ (ดู Service Routing §8)</td></tr>
+          <tr><td>หลายระบบภายนอกในเฟส 4</td><td><span class="risk r-L">สูง</span></td><td>ทำเฟส 4 ท้ายสุด หลังแกนนิ่ง + เลือกเฉพาะที่อยู่ใน scope</td></tr>
+        </tbody>
+      </table>
+      <div class="note crit"><b>ข้อแนะนำสำคัญ:</b> เจรจาขอบเขตสัญญาให้ <b>แยกชัดระหว่าง "ฮาร์ดแวร์ + ระบบคิวแกน (ส่งใน 120 วัน)" กับ "โมดูลเชื่อม HIS/นัด/ชำระเงิน (งวดถัดไป)"</b> พร้อมระบุ dependency ที่โรงพยาบาลต้องจัดเตรียม — เพื่อกันงานบานปลาย/ส่งไม่ทัน</div>
+    </section>
+
+    <!-- TOR MAP -->
+    <section id="tormap">
+      <h2>5. สรุป TOR → เฟส</h2>
+      <table>
+        <thead><tr><th>ข้อ TOR</th><th>โมดูล</th><th>เฟส</th></tr></thead>
+        <tbody>
+          <tr><td>3.1 คัดกรอง/ตรวจสิทธิ์</td><td>Patient/Visit/สปสช.</td><td><b>2</b></td></tr>
+          <tr><td>3.2 ลงทะเบียนผู้ป่วยใหม่</td><td>Registration (reverse-flow)</td><td><b>2</b></td></tr>
+          <tr><td>3.3 เรียกคิว + Routing</td><td>Core + Routing + Priority</td><td><b>1</b> (HIS-cond: <b>2</b>)</td></tr>
+          <tr><td>3.4 จอแสดงคิว</td><td>TV/Dashboard ปรับปรุง</td><td><b>1</b></td></tr>
+          <tr><td>3.5 นัดหมาย</td><td>Appointment (จนท.+online)</td><td><b>3</b></td></tr>
+          <tr><td>3.6 ยืนยันหน้าแผนก</td><td>Check-in + HIS</td><td><b>1</b>+<b>2</b></td></tr>
+          <tr><td>3.7 แจ้งเตือน</td><td>LINE OA</td><td><b>3</b></td></tr>
+          <tr><td>3.8 Smart Dispensing</td><td>Payment + จ่ายยา</td><td><b>4</b></td></tr>
+          <tr><td>3.9 Tele-pharmacy</td><td>Refill + จัดส่ง</td><td><b>4</b></td></tr>
+          <tr><td>3.10/3.11 KIOSK/Check-in</td><td>HW + UI</td><td><b>1</b>+<b>5</b></td></tr>
+          <tr><td>4/5/6 อุปกรณ์ & เงื่อนไข</td><td>UPS/ติดตั้ง/อบรม/รับประกัน</td><td><b>5</b></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>Implementation Plan · ระบบ Smart Queue (HAOS Queue → Hospital) · แผนพัฒนา 6 เฟส · 2026-06-26</footer>
+  </main>
+</div>
+</body>
+</html>

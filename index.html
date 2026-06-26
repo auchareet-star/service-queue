@@ -41,6 +41,7 @@
   .card.c3::before{background:var(--his);} .card.c3 h3{color:var(--his);} .card.c3 .tag{background:#f3e9fc;color:var(--his);}
   .card.c4::before{background:#0ea5e9;} .card.c4 h3{color:#0284c7;} .card.c4 .tag{background:#e0f2fe;color:#0284c7;}
   .card.c5::before{background:#7b2cbf;} .card.c5 h3{color:#7b2cbf;} .card.c5 .tag{background:#f3e9fc;color:#7b2cbf;}
+  .card.c6::before{background:#dc2626;} .card.c6 h3{color:#dc2626;} .card.c6 .tag{background:#fdeaea;color:#dc2626;}
 
   .mini{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;}
   .mini a{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;text-decoration:none;color:var(--text);font-size:13px;transition:background .15s;}
@@ -106,6 +107,13 @@
       <h3>5. Service Routing Design</h3>
       <p>ออกแบบฟีเจอร์ "เสร็จจุดนี้ → ไปจุดไหนต่อ" ตั้งกฎเส้นทางได้ + เงื่อนไขจาก HIS (มีสั่งยา → เพิ่มห้องจ่ายยาอัตโนมัติ) — หน้าตั้งค่า, data model, routing engine, flow OPD</p>
       <div class="meta"><span class="tag">ฟีเจอร์ใหม่ (ออกแบบ)</span><span class="go">เปิดเอกสาร →</span></div>
+    </a>
+
+    <a class="card c6" href="Implementation-Plan.html">
+      <div class="ico">🗓️</div>
+      <h3>6. Implementation Plan</h3>
+      <p>แผนพัฒนาทั้งหมด 6 เฟส (เตรียมการ → Core+Routing → เชื่อม HIS → นัด/LINE → ชำระเงิน/เภสัช → ส่งมอบ) พร้อม Timeline, Dependency/Critical Path, ความเสี่ยง และ map TOR → เฟส</p>
+      <div class="meta"><span class="tag">แผนพัฒนา</span><span class="go">เปิดเอกสาร →</span></div>
     </a>
 
     <a class="card" href="HAOS-Queue-System-Flow.md">
