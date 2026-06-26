@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Queue — Presentation</title>
+<style>
+  :root{
+    --c1:#0b2447;--c2:#1e6091;--c3:#168aad;--c4:#34a0a4;--gold:#fbbf24;
+    --glass:rgba(255,255,255,.10);--glassb:rgba(255,255,255,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;
+    background:linear-gradient(135deg,var(--c1),var(--c2) 55%,var(--c4));
+    color:#fff;overflow:hidden;
+  }
+  .deck{position:relative;width:100vw;height:100vh;}
+  .slide{
+    position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    padding:6vh 8vw;opacity:0;transform:translateY(24px) scale(.99);
+    transition:opacity .45s ease,transform .45s ease;pointer-events:none;
+    overflow-y:auto;
+  }
+  .slide.active{opacity:1;transform:none;pointer-events:auto;}
+
+  .kicker{font-size:clamp(12px,1.4vw,16px);letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px;}
+  h1{font-size:clamp(30px,5.2vw,62px);line-height:1.1;font-weight:800;margin-bottom:18px;}
+  h2{font-size:clamp(24px,3.6vw,42px);line-height:1.15;font-weight:800;margin-bottom:22px;}
+  .lead{font-size:clamp(15px,1.9vw,22px);opacity:.92;max-width:60ch;line-height:1.55;}
+  .muted{opacity:.78;}
+
+  .cards{display:grid;gap:16px;margin-top:24px;}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  .g5{grid-template-columns:repeat(5,1fr);}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:860px){.g3,.g4,.g5{grid-template-columns:repeat(2,1fr);}}
+
+  .card{background:var(--glass);border:1px solid var(--glassb);border-radius:16px;padding:20px;backdrop-filter:blur(6px);}
+  .card .ic{font-size:clamp(26px,3vw,38px);margin-bottom:8px;}
+  .card b{display:block;font-size:clamp(15px,1.7vw,19px);margin-bottom:5px;}
+  .card span{font-size:clamp(12px,1.3vw,14.5px);opacity:.85;line-height:1.45;}
+
+  /* flow row */
+  .flow{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:26px;}
+  .node{background:rgba(255,255,255,.95);color:#15324f;border-radius:14px;padding:14px 18px;font-weight:700;text-align:center;box-shadow:0 10px 24px rgba(0,0,0,.22);font-size:clamp(13px,1.5vw,17px);min-width:90px;}
+  .node small{display:block;font-weight:400;font-size:11.5px;color:#5c6670;margin-top:3px;}
+  .node.gold{background:var(--gold);color:#3a2c00;}
+  .node.cond{background:rgba(255,255,255,.16);color:#fff;border:2px dashed rgba(255,255,255,.5);}
+  .arr{font-size:24px;color:var(--gold);font-weight:800;}
+  .arr small{display:block;font-size:11px;color:#dfe9f2;font-weight:600;}
+
+  .list{margin-top:20px;list-style:none;}
+  .list li{font-size:clamp(15px,1.9vw,21px);margin:12px 0;padding-left:38px;position:relative;line-height:1.45;}
+  .list li::before{content:"▸";position:absolute;left:6px;color:var(--gold);font-weight:800;}
+  .list li small{display:block;font-size:14px;opacity:.75;padding-left:0;}
+
+  .pill{display:inline-block;background:var(--glass);border:1px solid var(--glassb);border-radius:30px;padding:7px 16px;font-size:clamp(12px,1.4vw,15px);margin:5px 6px 0 0;}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;margin-top:18px;}
+  @media(max-width:860px){.twocol{grid-template-columns:1fr;}}
+
+  .big-num{font-size:clamp(40px,7vw,86px);font-weight:800;color:var(--gold);line-height:1;}
+
+  /* cover */
+  .cover-badge{display:inline-block;border:1px solid var(--glassb);background:var(--glass);border-radius:30px;padding:8px 18px;font-size:14px;margin-bottom:24px;}
+  .cover-foot{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* controls */
+  .ctrl{position:fixed;bottom:18px;right:24px;display:flex;align-items:center;gap:10px;z-index:20;}
+  .btn{background:var(--glass);border:1px solid var(--glassb);color:#fff;width:44px;height:44px;border-radius:50%;font-size:20px;cursor:pointer;backdrop-filter:blur(6px);transition:background .15s;display:flex;align-items:center;justify-content:center;}
+  .btn:hover{background:rgba(255,255,255,.25);}
+  .counter{font-size:14px;background:var(--glass);border:1px solid var(--glassb);padding:8px 14px;border-radius:20px;backdrop-filter:blur(6px);}
+  .progress{position:fixed;top:0;left:0;height:4px;background:var(--gold);width:0;transition:width .4s ease;z-index:20;}
+  .dots{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:20;}
+  .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);cursor:pointer;transition:.15s;}
+  .dot.on{background:var(--gold);transform:scale(1.3);}
+  .hint{position:fixed;bottom:20px;left:24px;font-size:12px;opacity:.6;z-index:20;}
+  @media(max-width:700px){.dots,.hint{display:none;}}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 COVER -->
+  <section class="slide">
+    <div class="cover-badge">⚙️ ระบบบริหารจัดการคิวอัจฉริยะ</div>
+    <h1>Smart Queue<br>สำหรับโรงพยาบาล</h1>
+    <p class="lead">ระบบคิว HAOS Queue ที่พัฒนาเพิ่มเติม — เชื่อมต่อ HIS, เส้นทางบริการอัตโนมัติ, แจ้งเตือนผ่าน LINE และจอแสดงผลแบบเรียลไทม์</p>
+    <div class="cover-foot">
+      <span class="pill">เรียลไทม์ (SignalR)</span>
+      <span class="pill">เชื่อม HIS / สปสช.</span>
+      <span class="pill">เส้นทางบริการอัตโนมัติ</span>
+      <span class="pill">KIOSK / Mobile / TV</span>
+    </div>
+  </section>
+
+  <!-- 2 PROBLEM -->
+  <section class="slide">
+    <div class="kicker">ทำไมต้องมีระบบนี้</div>
+    <h2>จากคิวที่วุ่นวาย → สู่การไหลลื่นอัตโนมัติ</h2>
+    <div class="cards g3">
+      <div class="card"><div class="ic">😵</div><b>ปัญหาเดิม</b><span>ผู้ป่วยไม่รู้ลำดับคิว · เจ้าหน้าที่ต้องจำว่าเสร็จแล้วไปไหนต่อ · คิวยาวไม่ทราบสาเหตุ</span></div>
+      <div class="card"><div class="ic">✨</div><b>สิ่งที่เพิ่ม</b><span>เส้นทางบริการอัตโนมัติ · เชื่อมข้อมูลผู้ป่วยจาก HIS · ติดตามคิวผ่านมือถือ · Dashboard เรียลไทม์</span></div>
+      <div class="card"><div class="ic">🎯</div><b>ผลลัพธ์</b><span>ลดความผิดพลาด · ลดเวลารอ · ผู้ป่วยไม่หลงทาง · ผู้บริหารเห็นภาพรวม</span></div>
+    </div>
+  </section>
+
+  <!-- 3 OVERVIEW ARCHITECTURE -->
+  <section class="slide">
+    <div class="kicker">ภาพรวมระบบ</div>
+    <h2>ทุกส่วนทำงานเชื่อมกันแบบเรียลไทม์</h2>
+    <div class="flow">
+      <div class="node gold">👤 ผู้ป่วย<small>KIOSK / Mobile</small></div>
+      <div class="arr">→</div>
+      <div class="node">⚙️ ระบบคิว<small>Queue Engine</small></div>
+      <div class="arr">↔</div>
+      <div class="node">🏥 HIS<small>ผู้ป่วย/Visit/Order</small></div>
+    </div>
+    <div class="flow">
+      <span class="muted" style="font-size:14px;">กระจายสดไป →</span>
+      <div class="node">🧑‍💼 เจ้าหน้าที่</div>
+      <div class="node">📺 จอ TV</div>
+      <div class="node">📱 มือถือผู้ป่วย</div>
+      <div class="node">📊 Dashboard</div>
+      <div class="node">💬 LINE OA</div>
+    </div>
+    <p class="lead muted" style="margin-top:22px;">ทุกการกระทำ (ออกบัตร · เรียกคิว · ส่งต่อ) อัปเดตทุกหน้าจอทันที ผ่าน SignalR (WebSocket)</p>
+  </section>
+
+  <!-- 4 PERSONAS -->
+  <section class="slide">
+    <div class="kicker">ใครใช้งานบ้าง</div>
+    <h2>5 กลุ่มผู้ใช้ · แต่ละคนเห็นหน้าจอที่ออกแบบเฉพาะ</h2>
+    <div class="cards g5">
+      <div class="card"><div class="ic">👤</div><b>ผู้ป่วย</b><span>รับบัตร · ติดตามคิวผ่านมือถือ</span></div>
+      <div class="card"><div class="ic">🧑‍💼</div><b>เจ้าหน้าที่</b><span>เรียก · ส่งต่อ · พักคิว</span></div>
+      <div class="card"><div class="ic">📺</div><b>ดูแลจอ TV</b><span>ตั้งค่าจอแสดงคิว</span></div>
+      <div class="card"><div class="ic">🛠️</div><b>ผู้ดูแลระบบ</b><span>ตั้งค่า/สิทธิ์/เส้นทาง</span></div>
+      <div class="card"><div class="ic">📊</div><b>ผู้บริหาร</b><span>Dashboard / รายงาน</span></div>
+    </div>
+  </section>
+
+  <!-- 5 PATIENT JOURNEY -->
+  <section class="slide">
+    <div class="kicker">การใช้งาน · มุมผู้ป่วย</div>
+    <h2>เส้นทางผู้ป่วย ตั้งแต่รับบัตรจนเสร็จ</h2>
+    <div class="flow">
+      <div class="node gold">1. รับบัตร<small>KIOSK + บัตร ปชช.</small></div>
+      <div class="arr">→</div>
+      <div class="node">2. รอ<small>ดูจอ/มือถือ</small></div>
+      <div class="arr">→</div>
+      <div class="node">3. เช็คอิน<small>หน้าแผนก</small></div>
+      <div class="arr">→</div>
+      <div class="node">4. ถูกเรียก<small>เด้ง+เสียง</small></div>
+      <div class="arr">→</div>
+      <div class="node">5. รับบริการ</div>
+      <div class="arr">→</div>
+      <div class="node gold">ไปจุดต่อไป<small>อัตโนมัติ</small></div>
+    </div>
+    <p class="lead" style="margin-top:24px;">📱 ผู้ป่วยสแกน QR บนบัตร → เห็นลำดับคิว + เส้นทางที่ต้องไป + สถานะสด โดยไม่ต้องเฝ้าจอ</p>
+  </section>
+
+  <!-- 6 STAFF -->
+  <section class="slide">
+    <div class="kicker">การใช้งาน · มุมเจ้าหน้าที่</div>
+    <h2>หน้าจอเรียกคิว ทำได้ครบในจอเดียว</h2>
+    <div class="cards g4">
+      <div class="card"><div class="ic">📞</div><b>เรียกคิวถัดไป</b><span>FIFO หรือเลือกเอง · คิวเร่งด่วนลัดอัตโนมัติ</span></div>
+      <div class="card"><div class="ic">🔁</div><b>เรียกซ้ำ</b><span>ผู้ป่วยไม่มา/ไม่ได้ยิน</span></div>
+      <div class="card"><div class="ic">⏸️</div><b>พักคิว</b><span>เลือกเหตุผล หลัก+ย่อย</span></div>
+      <div class="card"><div class="ic">➡️</div><b>ส่งต่อ / เสร็จ</b><span>ไปแผนกอื่น หรือ จบบริการ</span></div>
+    </div>
+    <p class="lead muted" style="margin-top:22px;">คิวแบ่งแท็บตามสถานะ (รอเช็คอิน · รอเรียก · กำลังบริการ · เสร็จ) เห็นภาพชัด ค้นหา/กรองได้</p>
+  </section>
+
+  <!-- 7 SERVICE ROUTING (HERO FEATURE) -->
+  <section class="slide">
+    <div class="kicker">⭐ ฟีเจอร์เด่น</div>
+    <h2>เส้นทางบริการอัตโนมัติ (Service Routing)</h2>
+    <p class="lead">ตั้งกฎไว้ว่า "เสร็จจุดนี้ → ไปจุดไหนต่อ" ระบบพาคิวไปเองโดยไม่ต้องสั่งทุกครั้ง</p>
+    <div class="flow">
+      <div class="node">ซักประวัติ</div>
+      <div class="arr"><small>เสมอ</small>→</div>
+      <div class="node">ห้องตรวจ</div>
+      <div class="arr"><small>HIS แจ้ง</small>→</div>
+      <div class="node cond">มีสั่งยา?</div>
+      <div class="arr">→</div>
+      <div class="node gold">การเงิน → จ่ายยา</div>
+    </div>
+    <p class="lead" style="margin-top:22px;">💊 เมื่อ <b>HIS แจ้งว่าแพทย์สั่งยา</b> ระบบจะ <b>เพิ่มจุดห้องจ่ายยาเข้าเส้นทางอัตโนมัติ</b> — ผู้ป่วยไม่ต้องรับบัตรใหม่</p>
+  </section>
+
+  <!-- 8 CONFIG -->
+  <section class="slide">
+    <div class="kicker">การตั้งค่า</div>
+    <h2>ผู้ดูแลปรับระบบได้เองทั้งหมด</h2>
+    <div class="cards g3">
+      <div class="card"><div class="ic">🔀</div><b>เส้นทางบริการ</b><span>กฎ "จุดนี้→จุดต่อไป" · เงื่อนไขจาก HIS · map order→ห้อง</span></div>
+      <div class="card"><div class="ic">🏥</div><b>ห้อง / บริการ</b><span>ห้อง, แผนก, ช่องบริการ + จับคู่รหัสกับ HIS</span></div>
+      <div class="card"><div class="ic">⚡</div><b>ความเร่งด่วน</b><span>ระดับคิวลัด · Emergency Triage</span></div>
+      <div class="card"><div class="ic">🎫</div><b>บัตรคิว / ใบนำทาง</b><span>ปรับ layout + QR เองได้</span></div>
+      <div class="card"><div class="ic">⏱️</div><b>เกณฑ์เวลา</b><span>สีเตือนเวลารอบน Dashboard</span></div>
+      <div class="card"><div class="ic">👥</div><b>ผู้ใช้ / สิทธิ์</b><span>กลุ่มสิทธิ์ตามบทบาท</span></div>
+    </div>
+  </section>
+
+  <!-- 9 HIS INTEGRATION -->
+  <section class="slide">
+    <div class="kicker">การเชื่อมต่อ</div>
+    <h2>เชื่อม HIS ผ่าน API Gateway อย่างปลอดภัย</h2>
+    <div class="twocol">
+      <div>
+        <ul class="list">
+          <li>ค้นผู้ป่วยจากบัตรประชาชน → ดึง HN<small>+ เปิด Visit (VN)</small></li>
+          <li>ตรวจสอบสิทธิ์ สปสช.<small>บัตรทอง / ข้าราชการ / ชำระเอง</small></li>
+          <li>รับสัญญาณสั่งยา/Lab/X-ray<small>→ ขับเส้นทางบริการอัตโนมัติ</small></li>
+          <li>ข้อมูลคลินิก/เภสัช<small>ดูผ่าน Deep-link ไปหน้า HIS (ปลอดภัย/PDPA)</small></li>
+        </ul>
+      </div>
+      <div>
+        <div class="flow" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <div class="node">⚙️ ระบบคิว</div>
+          <div class="arr" style="text-align:center;">↕ REST + Webhook</div>
+          <div class="node gold">🛡️ API Gateway<small>OAuth2 · mTLS · Audit</small></div>
+          <div class="arr" style="text-align:center;">↓</div>
+          <div class="node">🏥 HIS · สปสช · LINE · Payment</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 REALTIME -->
+  <section class="slide">
+    <div class="kicker">หัวใจของระบบ</div>
+    <h2>เรียลไทม์ — กดครั้งเดียว อัปเดตทุกที่</h2>
+    <div class="flow">
+      <div class="node">🧑‍💼 เจ้าหน้าที่กดเรียกคิว</div>
+      <div class="arr">→</div>
+      <div class="node">⚙️ ระบบคิว</div>
+      <div class="arr"><small>SignalR</small>→</div>
+      <div class="node cond">📡 กระจายสด</div>
+    </div>
+    <div class="cards g4" style="margin-top:26px;">
+      <div class="card"><div class="ic">📺</div><b>จอ TV</b><span>เด้งเลข + เสียงเรียก</span></div>
+      <div class="card"><div class="ic">📱</div><b>มือถือ</b><span>อัปเดตตำแหน่งคิว</span></div>
+      <div class="card"><div class="ic">🧑‍💼</div><b>เจ้าหน้าที่อื่น</b><span>รายการคิวรีเฟรช</span></div>
+      <div class="card"><div class="ic">📊</div><b>Dashboard</b><span>สถิติเปลี่ยนทันที</span></div>
+    </div>
+  </section>
+
+  <!-- 11 TV & MOBILE -->
+  <section class="slide">
+    <div class="kicker">จุดสัมผัสผู้ป่วย</div>
+    <h2>จอแสดงคิว & ติดตามผ่านมือถือ</h2>
+    <div class="twocol">
+      <div class="card"><div class="ic">📺</div><b style="font-size:22px;">จอ TV ในห้องรอ</b>
+        <span style="font-size:15px;display:block;margin-top:8px;line-height:1.6;">• คิวที่กำลังเรียก + ช่องบริการ<br>• กระพริบ 10 วิ + เสียงเรียก<br>• คิวที่ถูกข้าม<br>• หลายแผนกใน 1 จอ</span></div>
+      <div class="card"><div class="ic">📱</div><b style="font-size:22px;">มือถือผู้ป่วย</b>
+        <span style="font-size:15px;display:block;margin-top:8px;line-height:1.6;">• สแกน QR บนบัตร<br>• เห็นลำดับคิว + คิวรอข้างหน้า<br>• เส้นทางที่ต้องไป (เหลือกี่จุด)<br>• แจ้งเตือนผ่าน LINE OA</span></div>
+    </div>
+  </section>
+
+  <!-- 12 BENEFITS -->
+  <section class="slide">
+    <div class="kicker">ประโยชน์ที่ได้รับ</div>
+    <h2>คุ้มค่าทั้งผู้ป่วย เจ้าหน้าที่ และโรงพยาบาล</h2>
+    <div class="cards g3">
+      <div class="card"><div class="big-num">0</div><b>ความผิดพลาดเส้นทาง</b><span>ระบบพาไปจุดต่อไปอัตโนมัติตามกฎ + HIS</span></div>
+      <div class="card"><div class="big-num">⚡</div><b>ลดเวลารอ</b><span>เรียลไทม์ + คิวเร่งด่วนลัด + เห็นคอขวดทันที</span></div>
+      <div class="card"><div class="big-num">😊</div><b>ผู้ป่วยไม่หลงทาง</b><span>ติดตามคิว+เส้นทางผ่านมือถือ โปร่งใส</span></div>
+    </div>
+    <div style="margin-top:20px;">
+      <span class="pill">✔ ลดงานเจ้าหน้าที่</span>
+      <span class="pill">✔ เชื่อมข้อมูลผู้ป่วยจริง</span>
+      <span class="pill">✔ ปลอดภัยตาม PDPA</span>
+      <span class="pill">✔ ขยาย/ตั้งค่าเองได้</span>
+    </div>
+  </section>
+
+  <!-- 13 CLOSING -->
+  <section class="slide">
+    <div class="cover-badge">🙏 ขอบคุณครับ</div>
+    <h1>พร้อมยกระดับ<br>ประสบการณ์ผู้ป่วย</h1>
+    <p class="lead">เอกสารประกอบทั้งหมด (Flow · Gap Analysis · HIS Integration · Service Routing · Implementation Plan · Dev Spec) ดูได้ที่หน้ารวมเอกสาร</p>
+    <div class="cover-foot">
+      <a href="index.html" style="text-decoration:none;"><span class="pill" style="background:var(--gold);color:#3a2c00;font-weight:700;">📋 เปิดหน้ารวมเอกสาร</span></a>
+    </div>
+  </section>
+
+</div>
+
+<!-- controls -->
+<div class="dots" id="dots"></div>
+<div class="ctrl">
+  <span class="counter" id="counter">1 / 13</span>
+  <button class="btn" id="prev">‹</button>
+  <button class="btn" id="next">›</button>
+  <button class="btn" id="full" title="เต็มจอ (F)">⛶</button>
+</div>
+<div class="hint">← → / Space เลื่อนสไลด์ · F เต็มจอ</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const counter=document.getElementById('counter');
+  const prog=document.getElementById('prog');
+  let cur=0;
+  slides.forEach((_,i)=>{const d=document.createElement('div');d.className='dot';d.onclick=()=>go(i);dotsWrap.appendChild(d);});
+  const dots=[...document.querySelectorAll('.dot')];
+  function go(i){
+    cur=Math.max(0,Math.min(slides.length-1,i));
+    slides.forEach((s,idx)=>s.classList.toggle('active',idx===cur));
+    dots.forEach((d,idx)=>d.classList.toggle('on',idx===cur));
+    counter.textContent=(cur+1)+' / '+slides.length;
+    prog.style.width=((cur+1)/slides.length*100)+'%';
+  }
+  function next(){go(cur+1);} function prev(){go(cur-1);}
+  document.getElementById('next').onclick=next;
+  document.getElementById('prev').onclick=prev;
+  document.getElementById('full').onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();};
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home')go(0); else if(e.key==='End')go(slides.length-1);
+    else if(e.key.toLowerCase()==='f')document.getElementById('full').click();
+  });
+  // swipe (touch)
+  let sx=0;
+  document.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50){dx<0?next():prev();}},{passive:true});
+  go(0);
+</script>
+</body>
+</html>

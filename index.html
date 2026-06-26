@@ -19,7 +19,19 @@
   .hero .badges{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;}
   .hero .badge{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);padding:5px 13px;border-radius:20px;font-size:12.5px;}
 
-  .crumb{font-size:12.5px;color:var(--muted);margin:14px 2px 22px;font-family:monospace;}
+  .crumb{font-size:12.5px;color:var(--muted);margin:14px 2px 18px;font-family:monospace;}
+
+  .present{display:flex;align-items:center;gap:20px;text-decoration:none;color:#fff;
+    background:linear-gradient(120deg,#0b2447,#1e6091 55%,#34a0a4);border-radius:18px;padding:22px 26px;
+    margin-bottom:26px;box-shadow:0 12px 30px rgba(30,96,145,.30);transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;}
+  .present::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;background:rgba(251,191,36,.18);border-radius:50%;}
+  .present:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(30,96,145,.40);}
+  .present .p-ic{font-size:42px;flex-shrink:0;}
+  .present .p-txt{flex:1;}
+  .present .p-txt b{display:block;font-size:19px;margin-bottom:4px;}
+  .present .p-txt span{font-size:13.5px;opacity:.9;}
+  .present .p-go{flex-shrink:0;background:#fbbf24;color:#3a2c00;font-weight:800;padding:10px 18px;border-radius:30px;font-size:14px;z-index:1;}
+  @media(max-width:720px){.present{flex-direction:column;text-align:center;}}
 
   h2.sec{font-size:15px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:30px 4px 14px;}
 
@@ -42,6 +54,7 @@
   .card.c4::before{background:#0ea5e9;} .card.c4 h3{color:#0284c7;} .card.c4 .tag{background:#e0f2fe;color:#0284c7;}
   .card.c5::before{background:#7b2cbf;} .card.c5 h3{color:#7b2cbf;} .card.c5 .tag{background:#f3e9fc;color:#7b2cbf;}
   .card.c6::before{background:#dc2626;} .card.c6 h3{color:#dc2626;} .card.c6 .tag{background:#fdeaea;color:#dc2626;}
+  .card.c7::before{background:#0f766e;} .card.c7 h3{color:#0f766e;} .card.c7 .tag{background:#d6f3ee;color:#0f766e;}
 
   .mini{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;}
   .mini a{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;text-decoration:none;color:var(--text);font-size:13px;transition:background .15s;}
@@ -70,6 +83,15 @@
     </div>
   </div>
   <div class="crumb">C:\AYD\Project\HAOS\m-queue\flow\</div>
+
+  <a class="present" href="Presentation.html">
+    <div class="p-ic">🎤</div>
+    <div class="p-txt">
+      <b>เริ่มที่นี่ · สไลด์นำเสนอ (Presentation)</b>
+      <span>ภาพรวมการใช้งาน · การตั้งค่า · การเชื่อมต่อ ของระบบที่พัฒนาเพิ่มแล้ว — เลื่อนด้วยลูกศร เต็มจอได้</span>
+    </div>
+    <div class="p-go">เปิดสไลด์ ▶</div>
+  </a>
 
   <h2 class="sec">เอกสารหลัก</h2>
   <div class="grid">
@@ -114,6 +136,13 @@
       <h3>6. Implementation Plan</h3>
       <p>แผนพัฒนาทั้งหมด 6 เฟส (เตรียมการ → Core+Routing → เชื่อม HIS → นัด/LINE → ชำระเงิน/เภสัช → ส่งมอบ) พร้อม Timeline, Dependency/Critical Path, ความเสี่ยง และ map TOR → เฟส</p>
       <div class="meta"><span class="tag">แผนพัฒนา</span><span class="go">เปิดเอกสาร →</span></div>
+    </a>
+
+    <a class="card c7" href="Development-Spec.html">
+      <div class="ico">📐</div>
+      <h3>7. Development Spec</h3>
+      <p>สเปกการพัฒนาทั้งหมด แตกเป็นโมดูล (SPEC A1–G2) ระบุ requirement, Backend (API/Entity), Frontend, เกณฑ์ตรวจรับ + ภาคผนวก DB Entity ใหม่ และ API ใหม่ทั้งหมด</p>
+      <div class="meta"><span class="tag">สเปกพัฒนา</span><span class="go">เปิดเอกสาร →</span></div>
     </a>
 
     <a class="card" href="HAOS-Queue-System-Flow.md">

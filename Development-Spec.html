@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Development Spec — สเปกการพัฒนาทั้งหมด</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--bg:#f4f7fa;--card:#fff;
+    --text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;--code-bg:#f0f4f8;--his:#7b2cbf;
+    --rL:#ef4444;--rM:#f59e0b;--rS:#22c55e;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.62;font-size:14.5px;}
+  .layout{display:flex;max-width:1480px;margin:0 auto;}
+  .sidebar{width:280px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:20px 14px;}
+  .sidebar h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 0 6px;}
+  .sidebar a{display:block;padding:5px 9px;border-radius:7px;color:var(--text);text-decoration:none;font-size:12.5px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .content{flex:1;padding:30px 40px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--accent));color:#fff;border-radius:18px;padding:32px 36px;margin-bottom:24px;box-shadow:0 12px 32px rgba(30,96,145,.26);}
+  .hero h1{margin:0 0 8px;font-size:26px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:18px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 6px;font-size:19px;color:var(--primary);padding-bottom:10px;border-bottom:2px solid var(--code-bg);}
+  .grp-desc{font-size:13px;color:var(--muted);margin:6px 0 14px;}
+  p{margin:7px 0;}ul{margin:6px 0;padding-left:20px;}li{margin:3px 0;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12.2px;}
+
+  /* spec module card */
+  .spec{border:1px solid var(--border);border-radius:12px;margin:14px 0;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+  .spec-head{background:#f4f8fb;padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .spec-head .sid{background:var(--primary);color:#fff;border-radius:7px;padding:3px 10px;font-weight:800;font-size:12.5px;font-family:monospace;}
+  .spec-head .sname{font-weight:700;font-size:15px;color:var(--primary);}
+  .spec-head .tags{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+  .tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;}
+  .t-tor{background:#fef3e2;color:#b45309;}.t-ph{background:#e0f2fe;color:#0369a1;}
+  .t-pL{background:#fdeaea;color:#b91c1c;}.t-pM{background:#fff4e0;color:#b45309;}.t-pS{background:#e9f9ef;color:#15803d;}
+  .spec-body{padding:14px 18px;}
+  .spec-body .row{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:7px 0;border-bottom:1px dashed var(--border);}
+  .spec-body .row:last-child{border-bottom:none;}
+  .spec-body .lbl{font-weight:700;font-size:12.5px;color:var(--muted);padding-top:1px;}
+  .spec-body .val{font-size:13.2px;}
+  .spec-body .val code{font-size:11.8px;}
+  .ac{background:#e9f7ef;border-left:3px solid var(--rS);padding:6px 11px;border-radius:0 6px 6px 0;font-size:12.8px;margin:3px 0;}
+  .api{font-family:monospace;font-size:11.8px;background:#1b2733;color:#cfe0ee;padding:2px 7px;border-radius:5px;display:inline-block;margin:1px;}
+  .ent{display:inline-block;background:#f3e9fc;color:var(--his);border:1px solid #e3c8f7;border-radius:6px;padding:1px 8px;font-size:11.8px;font-family:monospace;margin:1px;}
+
+  .note{background:#fff8e6;border-left:4px solid var(--rM);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13.3px;}
+  .note.tip{background:#e9f7ef;border-left-color:var(--rS);}
+  .note.crit{background:#fdeaea;border-left-color:var(--rL);}
+
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.8px;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  thead th{background:var(--primary);color:#fff;text-align:left;padding:8px 11px;}
+  tbody td{padding:7px 11px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafcfe;}
+  .mono{font-family:monospace;font-size:12px;}
+
+  @media(max-width:980px){.sidebar{display:none;}.content{padding:18px;}.spec-body .row{grid-template-columns:1fr;gap:3px;}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>เริ่มที่นี่</h2>
+    <a href="#intro">ภาพรวม & วิธีอ่าน</a>
+    <a href="#legend">สัญลักษณ์</a>
+    <h2>A · ต่อยอดระบบเดิม</h2>
+    <a href="#A1">A1 Service Routing</a>
+    <a href="#A2">A2 Priority / Triage</a>
+    <a href="#A3">A3 บัตรคิว / ใบนำทาง</a>
+    <a href="#A4">A4 จอแสดงผล / Dashboard</a>
+    <a href="#A5">A5 Master Mapping</a>
+    <h2>B · KIOSK & Check-in</h2>
+    <a href="#B1">B1 KIOSK กดบัตร</a>
+    <a href="#B2">B2 ตู้ Check-in</a>
+    <h2>C · เชื่อมต่อ HIS</h2>
+    <a href="#C1">C1 API Gateway</a>
+    <a href="#C2">C2 Patient / Visit</a>
+    <a href="#C3">C3 Eligibility / สปสช.</a>
+    <a href="#C4">C4 Order Signals</a>
+    <a href="#C5">C5 Deep-link คลินิก</a>
+    <h2>D · นัดหมาย</h2>
+    <a href="#D1">D1 นัดหมาย (เจ้าหน้าที่)</a>
+    <a href="#D2">D2 นัดออนไลน์ (ผู้ป่วย)</a>
+    <h2>E · แจ้งเตือน</h2>
+    <a href="#E1">E1 LINE OA + Notification</a>
+    <h2>F · การเงิน & เภสัช</h2>
+    <a href="#F1">F1 ชำระเงินออนไลน์</a>
+    <a href="#F2">F2 Smart Dispensing</a>
+    <a href="#F3">F3 Tele-pharmacy</a>
+    <h2>G · Cross-cutting</h2>
+    <a href="#G1">G1 Security / PDPA</a>
+    <a href="#G2">G2 Mobile ติดตามคิว</a>
+    <h2>ภาคผนวก</h2>
+    <a href="#appx-db">DB Entity ใหม่ทั้งหมด</a>
+    <a href="#appx-api">API ใหม่ทั้งหมด</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>📐 Development Spec — สเปกการพัฒนาทั้งหมด</h1>
+      <p>รวมทุกโมดูลที่ต้องพัฒนาเพื่อยกระดับ HAOS Queue → ระบบ Smart Queue โรงพยาบาลตาม TOR</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">รวบจาก Gap Analysis · HIS Integration · Service Routing · Implementation Plan · 2026-06-26</p>
+    </div>
+
+    <section id="intro">
+      <h2>ภาพรวม & วิธีอ่าน</h2>
+      <p>เอกสารนี้แตกงานพัฒนาเป็น <b>โมดูล (SPEC-xx)</b> จัดกลุ่ม A–G แต่ละโมดูลระบุ:</p>
+      <ul>
+        <li><b>รายละเอียด</b> — ทำอะไร (functional requirement)</li>
+        <li><b>Backend</b> — API endpoint + Entity/ตารางที่เกี่ยว</li>
+        <li><b>Frontend</b> — หน้าจอ/component</li>
+        <li><b>เชื่อมต่อ</b> — ระบบภายนอกที่เกี่ยวข้อง</li>
+        <li><b>เกณฑ์ตรวจรับ (Acceptance Criteria)</b> — เงื่อนไขถือว่าเสร็จ</li>
+      </ul>
+      <div class="note tip"><b>✅ = มีในระบบเดิมแล้ว (ต่อยอด)</b> · <b>🆕 = พัฒนาใหม่</b> — โมดูลกลุ่ม A ส่วนใหญ่ต่อยอด, กลุ่ม C–F เป็นของใหม่</div>
+    </section>
+
+    <section id="legend">
+      <h2>สัญลักษณ์</h2>
+      <p>
+        <span class="tag t-tor">TOR 3.x</span> ข้อ TOR ที่ตอบ &nbsp;
+        <span class="tag t-ph">เฟส n</span> เฟสในแผนพัฒนา &nbsp;
+        <span class="tag t-pL">P:สูง</span> <span class="tag t-pM">P:กลาง</span> <span class="tag t-pS">P:ต่ำ</span> ความซับซ้อน/ความเสี่ยง &nbsp;
+        <span class="api">GET /api</span> API &nbsp; <span class="ent">TbXxx</span> Entity
+      </p>
+    </section>
+
+    <!-- ============ GROUP A ============ -->
+    <section id="groupA">
+      <h2>A · ต่อยอดระบบคิวเดิม</h2>
+      <div class="grp-desc">ส่วนที่พัฒนาบนฐานเดิม (Queue Engine + SignalR + Report) ทำได้โดยไม่ต้องรอ HIS</div>
+
+      <!-- A1 -->
+      <div class="spec" id="A1">
+        <div class="spec-head"><span class="sid">A1</span><span class="sname">🔀 Service Routing Engine</span>
+          <span class="tags"><span class="tag t-tor">3.3 / routing</span><span class="tag t-ph">เฟส 1+2</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ตั้งกฎ "เสร็จจุดนี้ → ไปจุดไหนต่อ" 3 โหมด: <b>Always / เงื่อนไข HIS / Manual</b> · เมื่อกด "เสร็จ" Engine ประเมินกฎ + flag จาก HIS → สร้าง service ถัดไปอัตโนมัติ (ต่อยอดจาก Forward) · กันลูปไม่รู้จบ · ดูเอกสาร Service Routing ฉบับเต็ม</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="api">CRUD /api/service-route</span> <span class="api">POST /api/queue/complete (ผูก engine)</span> · Entity: <span class="ent">TbServiceRoute</span> <span class="ent">TbQueueOrderFlag</span> · เพิ่มฟิลด์ <code>RouteId, Sequence</code> ใน <span class="ent">TbQueueService</span></div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้า "ตั้งค่าเส้นทางบริการ" (ตารางกฎ + preview ผัง) · ปรับหน้า Calling ให้แสดงปลายทางอัตโนมัติ/ยืนยัน</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">ตั้งกฎ "ซักประวัติ→ห้องตรวจ" แล้วกดเสร็จ คิวเข้าห้องตรวจอัตโนมัติ</div><div class="ac">กฎเงื่อนไข DRUG_ORDER ทำงานเฉพาะเมื่อมี flag · ป้องกันลูปได้</div></div></div>
+        </div>
+      </div>
+
+      <!-- A2 -->
+      <div class="spec" id="A2">
+        <div class="spec-head"><span class="sid">A2</span><span class="sname">⚡ Priority / Triage (คิวลัด)</span>
+          <span class="tags"><span class="tag t-tor">3.3.2 / 3.3.10</span><span class="tag t-ph">เฟส 1</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">เพิ่มระดับความเร่งด่วนให้คิว → เรียงคิวลัดอัตโนมัติ · รองรับ Emergency Triage Score สำหรับห้องฉุกเฉิน · จัดลำดับการเรียกตาม priority + เวลา</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">เพิ่ม <code>PriorityLevel, TriageScore</code> ใน <span class="ent">TbQueueService</span> · ปรับ logic <code>NextAsync</code> ให้เรียงตาม priority ก่อน FIFO · <span class="api">PUT /api/queue/priority</span></div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">แสดงป้ายความเร่งด่วน (สี) ในรายการคิว/จอ TV · ปุ่มปรับระดับ triage</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">คิวเร่งด่วนถูกเรียกก่อนคิวปกติที่มาก่อน</div><div class="ac">แสดงสีความเร่งด่วนบนจอ TV ได้</div></div></div>
+        </div>
+      </div>
+
+      <!-- A3 -->
+      <div class="spec" id="A3">
+        <div class="spec-head"><span class="sid">A3</span><span class="sname">🎫 บัตรคิว / ใบนำทาง (ปรับแต่งได้)</span>
+          <span class="tags"><span class="tag t-tor">3.1.6 / 3.3.6</span><span class="tag t-ph">เฟส 1</span><span class="tag t-pS">P:ต่ำ</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">พิมพ์บัตรคิว (เลขคิว, ข้อมูลทั่วไป, QR) + ใบนำทาง (Navigation slip) ตาม template ที่ admin ปรับแต่งได้ · ต่อยอดจาก report engine (Stimulsoft) เดิม</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="api">POST /api/form/print-ticket</span> <span class="api">/print-navigation</span> · ใช้ ReportService เดิม + template .mrt · <span class="ent">TbTicketTemplate</span> (config)</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้าตั้งค่า template บัตร · trigger พิมพ์จาก KIOSK/หน้า Calling</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">พิมพ์บัตรมี QR ที่สแกนติดตามได้ · admin แก้ layout แล้วมีผล</div></div></div>
+        </div>
+      </div>
+
+      <!-- A4 -->
+      <div class="spec" id="A4">
+        <div class="spec-head"><span class="sid">A4</span><span class="sname">📺 จอแสดงผล & Dashboard (ปรับปรุง)</span>
+          <span class="tags"><span class="tag t-tor">3.4</span><span class="tag t-ph">เฟส 1</span><span class="tag t-pS">P:ต่ำ</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">เพิ่ม: แถบสีสถานะตามแผนก, แสดงความเร่งด่วน, สถานะเฉพาะห้องยา/การเงิน (กำลังจัดยา/รอการเงิน), ปรับ layout ต่อแผนกได้ · Dashboard ภาพรวมพร้อมเกณฑ์สีเวลารอ (มีฐานแล้ว)</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">เพิ่มสถานะย่อย (sub-status) ใน enum สถานะคิว · <span class="api">GET /api/queue/get-dashboard (ขยาย)</span></div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">QueueTV: เพิ่มธีม/แถบสีต่อแผนก · Dashboard: การ์ดสถิติ + สีเตือน</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">จอแสดงคิวกำลังรอ/รักษา/เรียกข้าม + ชื่อ + เวลารอ ตาม TOR 3.4.2–3.4.3</div></div></div>
+        </div>
+      </div>
+
+      <!-- A5 -->
+      <div class="spec" id="A5">
+        <div class="spec-head"><span class="sid">A5</span><span class="sname">🗂️ Master Data Mapping</span>
+          <span class="tags"><span class="tag t-tor">support</span><span class="tag t-ph">เฟส 1</span><span class="tag t-pS">P:ต่ำ</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">เพิ่มฟิลด์จับคู่ master ระบบคิว ↔ HIS (clinic/service/payer code) ทำเป็น config UI · เตรียมฟิลด์ HN/VN</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">เพิ่ม <code>HisClinicCode</code> ใน <span class="ent">TbmRoom</span>, <code>HisServiceCode</code> ใน <span class="ent">TbmServiceType</span>, <code>HN, VN, AppointmentId</code> ใน <span class="ent">TbQueue/TbQueueService</span> · <span class="ent">TbOrderTypeMap</span> (order→จุด)</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">เพิ่มช่อง map ในหน้าตั้งค่าห้อง/บริการ · หน้า Order Type Map</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">map clinic code ได้ และ routing ใช้ map นี้หาปลายทางถูกต้อง</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GROUP B ============ -->
+    <section id="groupB">
+      <h2>B · ตู้ KIOSK & Check-in</h2>
+      <div class="grp-desc">หน้าจอบนฮาร์ดแวร์ + เชื่อมอุปกรณ์ (card reader / printer / camera)</div>
+
+      <div class="spec" id="B1">
+        <div class="spec-head"><span class="sid">B1</span><span class="sname">📟 KIOSK กดบัตรคิว</span>
+          <span class="tags"><span class="tag t-tor">3.10</span><span class="tag t-ph">เฟส 1</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">หน้าจอ touch สำหรับผู้ป่วยกดรับบัตร: เสียบบัตรประชาชน → อ่าน CID/ชื่อ/รูป (ในเครื่อง) → เลือกบริการ/สิทธิ์ → พิมพ์บัตร · รองรับโหมดไม่มีบัตร (กดเลือกบริการอย่างเดียว)</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">ใช้ <span class="api">POST /api/queue/create</span> (รับ HN/CID/priority) · device token แยก</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">แอป Kiosk (Angular kiosk mode) · integrate SDK: ID card reader, thermal printer 80mm, กล้อง HD</div></div>
+          <div class="row"><div class="lbl">เชื่อมต่อ</div><div class="val">เครื่องอ่านบัตร ปชช. (SDK), เครื่องพิมพ์ความร้อน, กล้อง</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">เสียบบัตร → อ่านชื่อ+รูปได้ → ออกบัตรคิว + พิมพ์อัตโนมัติ</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="B2">
+        <div class="spec-head"><span class="sid">B2</span><span class="sname">📥 ตู้ Check-in</span>
+          <span class="tags"><span class="tag t-tor">3.11 / 3.6.1</span><span class="tag t-ph">เฟส 1</span><span class="tag t-pS">P:ต่ำ</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ผู้ป่วยสแกน QR/บัตร เพื่อยืนยันมาถึง → เช็คอินเข้าคิว · แสดงลำดับคิว</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">ใช้ <span class="api">POST /api/queue/checkin</span> <span class="api">GET /get-queue-scancheckin</span> (มีแล้ว)</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">แอป Check-in (touch) + เครื่องอ่านบัตร/QR scanner</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">สแกนแล้วสถานะเป็น CheckIn + แสดงลำดับคิวที่รอ</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GROUP C ============ -->
+    <section id="groupC">
+      <h2>C · เชื่อมต่อ HIS</h2>
+      <div class="grp-desc">ดูรายละเอียด contract เต็มในเอกสาร HIS Integration Design</div>
+
+      <div class="spec" id="C1">
+        <div class="spec-head"><span class="sid">C1</span><span class="sname">🛡️ API Gateway + Connector</span>
+          <span class="tags"><span class="tag t-tor">3.1.3</span><span class="tag t-ph">เฟส 2</span><span class="tag t-pL">P:สูง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ชั้นกลางคุย HIS: OAuth2/mTLS, retry, timeout, circuit breaker, idempotency, audit · HIS Connector service ใน Business layer</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="ent">IHisConnector</span> service + config endpoint mapping · webhook receiver base</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">เรียก HIS ผ่าน Gateway ได้ + มี audit log + จัดการ timeout/retry</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="C2">
+        <div class="spec-head"><span class="sid">C2</span><span class="sname">👤 Patient / Visit</span>
+          <span class="tags"><span class="tag t-tor">3.1.4 / 3.2</span><span class="tag t-ph">เฟส 2</span><span class="tag t-pL">P:สูง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ค้นผู้ป่วยจาก CID→HN, เปิด Visit (หรือ reverse-flow รับ VN), ลงทะเบียนผู้ป่วยใหม่ (ผ่าน HIS), เปิด Visit หลายคลินิกจากนัด</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">เรียก HIS: <span class="api">GET /patients?cid=</span> <span class="api">POST /visits</span> · webhook <span class="api">POST /queue/webhooks/visit-opened</span> · เก็บ HN/VN ในคิว</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้า KIOSK/เคาน์เตอร์: แสดงข้อมูลผู้ป่วย, เลือกคลินิก, เปิด Visit</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">เสียบบัตร → ดึง HN จาก HIS → เปิด Visit → คิวผูกกับ VN</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="C3">
+        <div class="spec-head"><span class="sid">C3</span><span class="sname">🆔 Eligibility / สปสช.</span>
+          <span class="tags"><span class="tag t-tor">3.1.2 / 3.1.5</span><span class="tag t-ph">เฟส 2</span><span class="tag t-pL">P:สูง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ตรวจสอบสิทธิ์ สปสช. ผ่านบัตรประชาชน + แสดงสิทธิ์ทั้งหมดให้เลือก (บัตรทอง/ข้าราชการ/ชำระเอง)</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="api">POST /his/eligibility/verify</span> หรือผ่าน NHSO โดยตรง · เก็บ <code>EligibilityCode</code></div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้าเลือกสิทธิ์ใน KIOSK/Check-in</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">แสดงสิทธิ์ที่ใช้ได้วันนั้น + ผู้ป่วยเลือกได้ + บันทึกกับ Visit</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="C4">
+        <div class="spec-head"><span class="sid">C4</span><span class="sname">📦 Order Signals (ขับ Routing)</span>
+          <span class="tags"><span class="tag t-tor">3.3.7 / routing</span><span class="tag t-ph">เฟส 2</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">รับสัญญาณว่าแพทย์สั่งยา/Lab/X-ray → ตั้ง flag → Routing เพิ่มจุดถัดไป · รับสถานะผล Lab/X-ray เพื่อล็อค/ปลดล็อคคิว</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">webhook <span class="api">POST /queue/webhooks/order-created</span> <span class="api">/order-status</span> หรือ pull <span class="api">GET /his/visits/{vn}/orders</span> · <span class="ent">TbQueueOrderFlag</span></div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">HIS แจ้ง DRUG → กดเสร็จห้องตรวจ → คิวไปการเงิน+ห้องจ่ายยาอัตโนมัติ</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="C5">
+        <div class="spec-head"><span class="sid">C5</span><span class="sname">🔗 Deep-link ข้อมูลคลินิก/เภสัช</span>
+          <span class="tags"><span class="tag t-tor">3.3.9</span><span class="tag t-ph">เฟส 2/4</span><span class="tag t-pS">P:ต่ำ</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ปุ่มเปิดหน้า HIS ของ Visit (ส่ง VN) เพื่อดูประวัติยา/แพ้ยา/Vital/Note — แทนการดึงข้อมูลอ่อนไหวเข้าคิว (ลดงาน/ลด PDPA)</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">สร้าง deep-link URL + SSO token (ถ้ามี)</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">ปุ่ม "ดูข้อมูลใน HIS" ในหน้าเรียกคิวห้องยา</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">กดแล้วเปิดหน้า HIS ของผู้ป่วยที่ถูก visit ได้ทันที</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GROUP D ============ -->
+    <section id="groupD">
+      <h2>D · นัดหมาย</h2>
+      <div class="grp-desc">โมดูลใหม่ทั้งหมด — ฝั่งเจ้าหน้าที่และผู้ป่วยออนไลน์</div>
+
+      <div class="spec" id="D1">
+        <div class="spec-head"><span class="sid">D1</span><span class="sname">📅 นัดหมาย (เจ้าหน้าที่)</span>
+          <span class="tags"><span class="tag t-tor">3.5.1</span><span class="tag t-ph">เฟส 3</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">จองนัดตามผู้ป่วย/แพทย์/แผนก/วันเวลา, กำหนดช่วงรับ, ยืนยันรับนัด, ส่งใบยืนยันผ่าน LINE, active คิวอัตโนมัติเมื่อมีนัด, เชื่อมระบบนัด รพ.</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="ent">TbAppointment</span> · <span class="api">CRUD /api/appointment</span> · webhook <span class="api">/queue/webhooks/appointment-created</span></div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้าจัดการนัดหมาย (ปฏิทิน/รายการ) สำหรับเจ้าหน้าที่</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">สร้างนัด → เมื่อถึงวัน คิว pre-load + เช็คอินได้</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="D2">
+        <div class="spec-head"><span class="sid">D2</span><span class="sname">🌐 นัดออนไลน์ (ผู้ป่วย)</span>
+          <span class="tags"><span class="tag t-tor">3.5.2</span><span class="tag t-ph">เฟส 3</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ผู้ป่วยจองออนไลน์: ยืนยันตัวตน, เลือกแผนก/แพทย์/วันเวลา/อาการ/สิทธิ์, ดูประวัติ (QR), แก้/ยกเลิก, ผูก LINE OA + เว็บไซต์</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="api">/api/public/appointment</span> (auth ผู้ป่วย) · ตรวจสิทธิ์กับ HIS</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">Portal/LIFF app จองออนไลน์ (responsive)</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">จองออนไลน์ผ่าน LINE → ได้ QR ใบนัด → ปรากฏในระบบเจ้าหน้าที่</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GROUP E ============ -->
+    <section id="groupE">
+      <h2>E · แจ้งเตือน</h2>
+      <div class="spec" id="E1">
+        <div class="spec-head"><span class="sid">E1</span><span class="sname">💬 LINE OA + Notification Engine</span>
+          <span class="tags"><span class="tag t-tor">3.7</span><span class="tag t-ph">เฟส 3</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">แจ้งเตือนการรักษา/ผล/นัด ผ่าน LINE OA · Flex Message · ตั้งเวลาส่ง · Auto message · บันทึกข้อความสนทนา · trigger จาก event คิว (called/pharmacy.ready + Pickup Code)</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">LINE Messaging API client · <span class="ent">TbNotificationTemplate</span> <span class="ent">TbNotificationLog</span> · subscribe queue events</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้าตั้งค่า template/Flex + ตารางส่ง</div></div>
+          <div class="row"><div class="lbl">เชื่อมต่อ</div><div class="val">LINE OA channel (token)</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">เมื่อเรียกคิว → ผู้ป่วยได้ LINE แจ้ง · ส่ง Flex ตามเวลาได้</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GROUP F ============ -->
+    <section id="groupF">
+      <h2>F · การเงิน & เภสัช</h2>
+      <div class="grp-desc">โมดูลปลายน้ำ พึ่งระบบภายนอกหลายตัว — ทำเฟสท้าย</div>
+
+      <div class="spec" id="F1">
+        <div class="spec-head"><span class="sid">F1</span><span class="sname">💳 ชำระเงินออนไลน์</span>
+          <span class="tags"><span class="tag t-tor">3.8.1/3.8.4</span><span class="tag t-ph">เฟส 4</span><span class="tag t-pL">P:สูง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">ตรวจยอด + ชำระผ่านแอป/เว็บ ผ่าน Payment Gateway third party · รับ webhook ยืนยันชำระ → trigger ส่งคิวจัดยา</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="api">GET /his/visits/{vn}/invoice</span> · Payment GW client · webhook <span class="api">/queue/webhooks/payment-completed</span> · <span class="ent">TbPayment</span></div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้าชำระเงิน (Portal/LINE)</div></div>
+          <div class="row"><div class="lbl">เชื่อมต่อ</div><div class="val">Payment Gateway, HIS billing</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">ชำระเงิน → ระบบรับ webhook → ส่งคิวจุดจัดยาอัตโนมัติ</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="F2">
+        <div class="spec-head"><span class="sid">F2</span><span class="sname">💊 Smart Dispensing</span>
+          <span class="tags"><span class="tag t-tor">3.8</span><span class="tag t-ph">เฟส 4</span><span class="tag t-pL">P:สูง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">หลังชำระเงิน: ส่งคิวจุดจัดยา + แยกช่องทาง (รับเอง/ส่งบ้าน) · สร้าง Pickup Code · บันทึกประวัติจัดส่ง/สถานะ · นโยบายแจ้งเตือน (โทร+บันทึก) · รายงานรายวัน/เดือน</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="ent">TbDispensing</span> <span class="ent">TbDelivery</span> · <span class="api">CRUD /api/dispensing</span> · ผูก routing → จุดจัดยา</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">หน้าจัดการจ่ายยา/จัดส่ง (เภสัช) + ติดตามสถานะ (ผู้ป่วย)</div></div>
+          <div class="row"><div class="lbl">เชื่อมต่อ</div><div class="val">HIS pharmacy, พาร์ทเนอร์ส่งยา</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">เลือกส่งบ้าน → สร้าง Pickup Code → ติดตามสถานะได้ · มีรายงานสรุป</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="F3">
+        <div class="spec-head"><span class="sid">F3</span><span class="sname">📱 Tele-pharmacy</span>
+          <span class="tags"><span class="tag t-tor">3.9</span><span class="tag t-ph">เฟส 4</span><span class="tag t-pL">P:สูง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">เติมยาออนไลน์: ดึงยา refill ได้, เลือกยา+จำนวน, ยืนยันตัวตน, ชำระเงิน, ส่งคิวจุด "จัดยา Tele-pharmacy", แจ้ง LINE + Pickup Code, แสดงสถานะคำขอ, เก็บข้อมูลทะเบียน/บัญชี/เภสัช</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val"><span class="api">GET /his/.../refillable-drugs</span> · <span class="ent">TbRefillRequest</span> · reuse payment + dispensing</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">Portal/LIFF เติมยา</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">ขอเติมยา → ชำระ → ส่งคิวจัดยา → แจ้ง LINE + Pickup Code · ติดตามสถานะ 4 ระดับ</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GROUP G ============ -->
+    <section id="groupG">
+      <h2>G · Cross-cutting</h2>
+      <div class="spec" id="G1">
+        <div class="spec-head"><span class="sid">G1</span><span class="sname">🔐 Security / PDPA / Audit</span>
+          <span class="tags"><span class="tag t-tor">security</span><span class="tag t-ph">เฟส 2+</span><span class="tag t-pM">P:กลาง</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">mTLS/OAuth2 ที่ Gateway, audit ทุก request ข้อมูลผู้ป่วย (ต่อยอด RequestResponseLoggingMiddleware), data minimization, consent LINE, idempotency webhook, device token</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">ขยาย middleware audit · <span class="ent">TbAuditLog</span> · consent store</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">ทุกการเข้าถึงข้อมูลผู้ป่วยมี log + webhook ซ้ำไม่ทำงานซ้ำ</div></div></div>
+        </div>
+      </div>
+
+      <div class="spec" id="G2">
+        <div class="spec-head"><span class="sid">G2</span><span class="sname">📲 Mobile ติดตามคิว (Itinerary)</span>
+          <span class="tags"><span class="tag t-tor">3.2.7/3.6.10</span><span class="tag t-ph">เฟส 1+</span><span class="tag t-pS">P:ต่ำ</span></span></div>
+        <div class="spec-body">
+          <div class="row"><div class="lbl">รายละเอียด</div><div class="val">หน้าติดตามคิว (มีฐานแล้ว) + เพิ่มแสดง <b>เส้นทางทั้งหมด (itinerary)</b> ว่าผ่านจุดไหนแล้ว เหลือกี่จุด · อัปเดตสด</div></div>
+          <div class="row"><div class="lbl">Backend</div><div class="val">ขยาย <span class="api">GET /api/mobile/get-detail</span> ให้คืน service path + จุดที่เหลือ</div></div>
+          <div class="row"><div class="lbl">Frontend</div><div class="val">เพิ่ม timeline เส้นทางในหน้า mobile detail</div></div>
+          <div class="row"><div class="lbl">ตรวจรับ</div><div class="val"><div class="ac">ผู้ป่วยเห็น "✔ซักประวัติ → ✔ตรวจ → จ่ายยา (เหลือ 1)" สด</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APPENDIX DB -->
+    <section id="appx-db">
+      <h2>ภาคผนวก · Database Entity ใหม่ทั้งหมด</h2>
+      <table>
+        <thead><tr><th>Entity</th><th>ใช้ใน</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">TbServiceRoute</td><td>A1</td><td>กฎเส้นทาง</td></tr>
+          <tr><td class="mono">TbQueueOrderFlag</td><td>A1/C4</td><td>flag order จาก HIS</td></tr>
+          <tr><td class="mono">TbOrderTypeMap</td><td>A5</td><td>map ประเภท order → จุด</td></tr>
+          <tr><td class="mono">TbTicketTemplate</td><td>A3</td><td>template บัตร/ใบนำทาง</td></tr>
+          <tr><td class="mono">TbAppointment</td><td>D1/D2</td><td>นัดหมาย</td></tr>
+          <tr><td class="mono">TbNotificationTemplate / TbNotificationLog</td><td>E1</td><td>แจ้งเตือน LINE</td></tr>
+          <tr><td class="mono">TbPayment</td><td>F1</td><td>การชำระเงิน</td></tr>
+          <tr><td class="mono">TbDispensing / TbDelivery</td><td>F2</td><td>จ่ายยา/จัดส่ง</td></tr>
+          <tr><td class="mono">TbRefillRequest</td><td>F3</td><td>คำขอเติมยา</td></tr>
+          <tr><td class="mono">TbAuditLog</td><td>G1</td><td>บันทึกการเข้าถึง</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">+ เพิ่มฟิลด์ในตารางเดิม: <code>TbQueueService</code> (PriorityLevel, TriageScore, RouteId, Sequence, HN, VN), <code>TbmRoom</code> (HisClinicCode), <code>TbmServiceType</code> (HisServiceCode)</p>
+    </section>
+
+    <!-- APPENDIX API -->
+    <section id="appx-api">
+      <h2>ภาคผนวก · API ใหม่/ที่ขยายทั้งหมด</h2>
+      <table>
+        <thead><tr><th>กลุ่ม</th><th>Endpoint</th><th>โมดูล</th></tr></thead>
+        <tbody>
+          <tr><td>Routing</td><td class="mono">CRUD /api/service-route, /api/order-type-map</td><td>A1/A5</td></tr>
+          <tr><td>Queue (ขยาย)</td><td class="mono">PUT /api/queue/priority · POST /complete (engine)</td><td>A1/A2</td></tr>
+          <tr><td>Print</td><td class="mono">POST /api/form/print-ticket, /print-navigation</td><td>A3</td></tr>
+          <tr><td>HIS call</td><td class="mono">GET /patients · POST /visits · /eligibility/verify · GET /visits/{vn}/orders · /invoice</td><td>C2–C4/F1</td></tr>
+          <tr><td>Webhook รับ</td><td class="mono">/queue/webhooks/{visit-opened, appointment-created, order-created, order-status, payment-completed}</td><td>C/D/F</td></tr>
+          <tr><td>Appointment</td><td class="mono">CRUD /api/appointment · /api/public/appointment</td><td>D1/D2</td></tr>
+          <tr><td>Notification</td><td class="mono">CRUD /api/notification-template · /api/notification/send</td><td>E1</td></tr>
+          <tr><td>Payment/Pharmacy</td><td class="mono">/api/payment · /api/dispensing · /api/refill</td><td>F1–F3</td></tr>
+          <tr><td>Mobile (ขยาย)</td><td class="mono">GET /api/mobile/get-detail (+itinerary)</td><td>G2</td></tr>
+        </tbody>
+      </table>
+      <div class="note tip">ดู contract ฝั่ง HIS เต็ม ๆ ที่เอกสาร <a href="HIS-Integration-Design.html" style="color:var(--his);font-weight:700;">HIS Integration Design</a> · ลำดับการพัฒนาดูที่ <a href="Implementation-Plan.html" style="color:#dc2626;font-weight:700;">Implementation Plan</a></div>
+    </section>
+
+    <footer>Development Spec · ระบบ Smart Queue (HAOS Queue → Hospital) · สเปกการพัฒนาทั้งหมด · 2026-06-26</footer>
+  </main>
+</div>
+</body>
+</html>
