@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HIS Integration Design — ระบบคิว ⇄ HIS</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--bg:#f4f7fa;--card:#fff;
+    --text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;--code-bg:#f0f4f8;
+    --his:#7b2cbf;--queue:#1e6091;--ext:#d97706;--ok:#22c55e;--warn:#ef4444;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.65;font-size:14.5px;}
+  .layout{display:flex;max-width:1440px;margin:0 auto;}
+  .sidebar{width:270px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:22px 16px;}
+  .sidebar h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px;}
+  .sidebar a{display:block;padding:6px 10px;border-radius:7px;color:var(--text);text-decoration:none;font-size:13px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .content{flex:1;padding:32px 42px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--his));color:#fff;border-radius:16px;padding:30px 34px;margin-bottom:26px;box-shadow:0 10px 30px rgba(30,96,145,.25);}
+  .hero h1{margin:0 0 6px;font-size:26px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:20px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 14px;font-size:19px;color:var(--primary);padding-bottom:10px;border-bottom:2px solid var(--code-bg);}
+  h3{color:var(--primary-light);font-size:15.5px;margin:20px 0 8px;}
+  h4{font-size:14px;margin:14px 0 6px;}
+  p{margin:8px 0;}ul,ol{margin:8px 0;padding-left:22px;}li{margin:4px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:"Cascadia Code",Consolas,monospace;font-size:12.3px;}
+  pre{background:#1b2733;color:#d6e3f0;padding:15px 18px;border-radius:12px;overflow-x:auto;font-family:"Cascadia Code",Consolas,monospace;font-size:12.5px;line-height:1.5;}
+  pre .k{color:#7fd1e8;}pre .s{color:#b5e0a0;}pre .c{color:#7b8a99;}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  thead th{background:var(--primary);color:#fff;text-align:left;padding:9px 12px;font-weight:600;}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafcfe;}tbody tr:hover{background:#eef6fb;}
+  .mono{font-family:monospace;font-size:12px;white-space:nowrap;}
+
+  .method{display:inline-block;font-family:monospace;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;color:#fff;}
+  .get{background:#22c55e;}.post{background:#3b82f6;}.put{background:#f59e0b;}.evt{background:#7b2cbf;}
+
+  .note{background:#fff8e6;border-left:4px solid var(--ext);padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13.5px;}
+  .note.tip{background:#e9f7ef;border-left-color:var(--ok);}
+  .note.crit{background:#fdeaea;border-left-color:var(--warn);}
+
+  /* arch diagram */
+  .arch{display:flex;flex-direction:column;align-items:center;gap:6px;margin:18px 0;}
+  .arch-row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
+  .box{border-radius:12px;padding:13px 18px;font-weight:600;text-align:center;font-size:13.5px;box-shadow:0 4px 12px rgba(0,0,0,.10);min-width:120px;}
+  .box small{display:block;font-weight:400;font-size:11px;opacity:.85;margin-top:3px;}
+  .b-queue{background:linear-gradient(135deg,var(--queue),var(--primary-light));color:#fff;}
+  .b-his{background:linear-gradient(135deg,var(--his),#9d4edd);color:#fff;}
+  .b-gw{background:#fff;border:2px dashed var(--accent);color:var(--accent);}
+  .b-ext{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;}
+  .b-client{background:#eef3f7;border:2px solid var(--border);color:var(--text);}
+  .ar{display:inline-flex;flex-direction:column;align-items:center;color:var(--accent);font-size:24px;font-weight:700;}
+  .ar small{font-size:10.5px;color:var(--muted);}
+  .ad{color:var(--accent);font-size:22px;font-weight:700;}
+
+  /* sequence */
+  .seq{border-left:3px solid var(--primary-light);margin:14px 0;padding-left:0;}
+  .seq .step{display:flex;gap:12px;padding:7px 0 7px 14px;border-bottom:1px dashed var(--border);}
+  .seq .who{flex-shrink:0;width:120px;font-weight:700;font-size:12px;}
+  .who.q{color:var(--queue);}.who.h{color:var(--his);}.who.e{color:var(--ext);}.who.c{color:var(--muted);}
+  .seq .act{font-size:13px;}
+
+  .dir{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;}
+  .d-out{background:#e7f0fb;color:var(--queue);}
+  .d-in{background:#f3e9fc;color:var(--his);}
+
+  /* necessity badges */
+  .nec{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px;color:#fff;white-space:nowrap;}
+  .n-must{background:#dc2626;}.n-should{background:#d97706;}.n-opt{background:#64748b;}
+  .legbar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 16px;}
+  .legbar span{font-size:12.5px;}
+  .alt{background:#eef7f0;border-left:3px solid var(--ok);padding:2px 8px;border-radius:0 5px 5px 0;display:inline-block;font-size:12.5px;}
+
+  @media(max-width:900px){.sidebar{display:none;}.content{padding:18px;}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>สารบัญ</h2>
+    <a href="#arch">1. ภาพรวมสถาปัตยกรรม</a>
+    <a href="#pattern">2. รูปแบบการเชื่อมต่อ</a>
+    <a href="#his-api">3. API ที่ HIS ต้องเปิด</a>
+    <a href="#necessity" style="color:#b00020;font-weight:700;">★ ระดับจำเป็น & ทางเลือก</a>
+    <a href="#queue-api">4. API/Event ที่ Queue เปิด</a>
+    <a href="#seq">5. Sequence Flows</a>
+    <a href="#mapping">6. Master Data Mapping</a>
+    <a href="#security">7. Security & PDPA</a>
+    <a href="#checklist">8. Checklist คำถามถึง HIS</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>HIS Integration Design</h1>
+      <p>การเชื่อมต่อระหว่าง <b>ระบบคิว (HAOS Queue)</b> ⇄ <b>HIS โรงพยาบาล</b> + สปสช./บัตรประชาชน/LINE OA/Payment</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">เอกสารออกแบบเชิงเทคนิค (Reference Design) · 2026-06-26</p>
+    </div>
+
+    <!-- 1 -->
+    <section id="arch">
+      <h2>1. ภาพรวมสถาปัตยกรรม (Integration Architecture)</h2>
+      <p>หลักการ: ระบบคิว <b>ไม่ต่อตรงเข้า Database ของ HIS</b> แต่คุยผ่าน <b>API Gateway</b> เป็นชั้นกลาง (ตามที่ TOR ข้อ 3.1.3 / 3.2.4 / 3.6.3 ระบุ "API GATEWAY หรือตามที่โรงพยาบาลกำหนด") เพื่อความปลอดภัย, ควบคุมสิทธิ์, และลดการผูกติดกับ schema ภายใน HIS</p>
+
+      <div class="arch">
+        <div class="arch-row">
+          <div class="box b-client">📟 KIOSK / Check-in<small>กดบัตร / เช็คอิน</small></div>
+          <div class="box b-client">🧑‍💼 เจ้าหน้าที่ / จอ TV</div>
+          <div class="box b-client">📱 ผู้ป่วย (Mobile/LINE)</div>
+        </div>
+        <div class="ad">↕ <small style="font-size:11px;">SignalR (WebSocket) — real-time</small></div>
+        <div class="arch-row">
+          <div class="box b-queue" style="min-width:220px;">⚙️ ระบบคิว HAOS Queue<small>Queue Engine · Check-in · Calling · Display · Dashboard</small></div>
+        </div>
+        <div class="arch-row" style="margin-top:6px;">
+          <div class="ar"><small>REST (sync)</small>↕</div>
+          <div class="ar"><small>Webhook/Event (async)</small>↕</div>
+        </div>
+        <div class="arch-row">
+          <div class="box b-gw" style="min-width:260px;">🛡️ API Gateway<small>OAuth2 / API Key · mTLS · Audit · Rate limit · Data masking</small></div>
+        </div>
+        <div class="ad">↓</div>
+        <div class="arch-row">
+          <div class="box b-his">🏥 HIS<small>Patient · Visit · Order · Pharmacy · Billing</small></div>
+          <div class="box b-ext">🆔 สปสช. (NHSO)<small>ตรวจสอบสิทธิ์</small></div>
+          <div class="box b-ext">💬 LINE OA<small>Messaging API</small></div>
+          <div class="box b-ext">💳 Payment GW<small>Third party</small></div>
+        </div>
+      </div>
+
+      <div class="note tip"><b>2 ช่องทางการสื่อสาร:</b> <b>(1) Sync REST</b> — ระบบคิวเป็นฝ่ายเรียก HIS เมื่อต้องการข้อมูลทันที (ค้นผู้ป่วย, ตรวจสิทธิ์, เปิด Visit) &nbsp;|&nbsp; <b>(2) Async Event/Webhook</b> — สำหรับการแจ้งเหตุการณ์สองทาง (HIS แจ้งว่ามีนัดใหม่ → Queue, Queue แจ้งว่าเรียกคิว/เสร็จ → HIS/LINE)</div>
+      <div class="note"><b>หมายเหตุ WebSocket:</b> ข้อกำหนด WebSocket ใน TOR (3.1.11/3.6.9) คือการสื่อสาร <b>ระบบคิว ⇄ หน้าจอ Client</b> (มี SignalR อยู่แล้ว) — <u>คนละชั้น</u>กับการเชื่อม HIS ซึ่งใช้ REST/Event ผ่าน Gateway</div>
+    </section>
+
+    <!-- 2 -->
+    <section id="pattern">
+      <h2>2. รูปแบบการเชื่อมต่อ 3 แบบ (เลือกตามลักษณะข้อมูล)</h2>
+      <table>
+        <thead><tr><th>รูปแบบ</th><th>ใช้เมื่อ</th><th>ตัวอย่างใน TOR</th><th>ข้อดี/ข้อควรระวัง</th></tr></thead>
+        <tbody>
+          <tr><td><b>① Synchronous REST</b><br>(Request/Response)</td><td>ต้องการข้อมูลทันทีตอนผู้ป่วยยืนอยู่หน้าตู้/เคาน์เตอร์</td><td>ค้นผู้ป่วยจากบัตร ปชช., ตรวจสิทธิ์ สปสช., เปิด Visit, ดึงรายการนัดวันนี้</td><td>ง่าย ตรงไปตรงมา · ต้องกำหนด timeout + fallback ถ้า HIS ช้า/ล่ม</td></tr>
+          <tr><td><b>② Async Event / Webhook</b><br>(Publish/Subscribe)</td><td>เหตุการณ์เกิดฝั่งหนึ่ง ต้องแจ้งอีกฝั่งโดยไม่ต้องรอ</td><td>HIS จองนัด → activate คิวอัตโนมัติ (3.5.1.5), คิวถูกเรียก/เสร็จ → แจ้ง HIS + LINE OA</td><td>ทนทาน, decoupled · ต้องมี retry + idempotency + dead-letter</td></tr>
+          <tr><td><b>③ Polling (สำรอง)</b></td><td>HIS ไม่รองรับ push และต้องติดตามสถานะที่เปลี่ยนช้า</td><td>สถานะผล LAB/X-ray (3.3.7) ถ้าไม่มี event</td><td>ใช้เมื่อจำเป็นเท่านั้น · เปลือง resource — กำหนดความถี่ให้เหมาะ</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>คำแนะนำ:</b> รูปแบบที่ดีที่สุดขึ้นกับว่า HIS รองรับอะไร — โรงพยาบาลไทยส่วนใหญ่ (เช่น HOSxP, JHCIS, SSB, Vendor เฉพาะ) มักเปิด <b>REST/JSON</b> หรือ <b>HL7 v2 / FHIR</b> ผ่าน middleware ควรยืนยันกับทีม HIS ว่ารองรับ event/webhook หรือไม่ ถ้าไม่ ให้ออกแบบ polling สำรอง</div>
+    </section>
+
+    <!-- 3 -->
+    <section id="his-api">
+      <h2>3. API ที่ HIS ต้องเปิดให้ (HIS → ระบบคิวเรียกใช้)</h2>
+      <p>นี่คือรายการ endpoint ที่ <b>HIS ต้องเปิดให้ระบบคิวเรียก</b> (ผ่าน Gateway) จัดกลุ่มตามภารกิจ พร้อมแมปกับข้อ TOR</p>
+
+      <h3>3.1 กลุ่มผู้ป่วย & สิทธิ์ (Patient & Eligibility)</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint (ตัวอย่าง)</th><th>หน้าที่ / ข้อมูลที่คืน</th><th>TOR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/patients?cid={เลขบัตรปชช}</td><td>ค้น/ตรวจว่ามีประวัติผู้ป่วยไหม → คืน HN, คำนำหน้า, ชื่อ-สกุล, วันเกิด, เพศ, เบอร์โทร, รูปถ่าย, ธงโรคเรื้อรัง</td><td>3.1.4, 3.2.1</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/patients/{hn}/eligibilities?date=</td><td>สิทธิ์ที่ใช้ได้วันนั้น (บัตรทอง/ข้าราชการ/ประกันสังคม/ชำระเอง) + payer code, รพ.หลัก/รอง</td><td>3.1.5, 3.6.5</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/his/eligibility/verify</td><td>ตรวจสอบสิทธิ์ สปสช. (proxy ไป NHSO) จากเลขบัตร ปชช. → main/sub scheme, ความถูกต้อง</td><td>3.1.2, 3.6.2</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.2 กลุ่ม Visit & นัดหมาย</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint</th><th>หน้าที่</th><th>TOR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/patients/{hn}/appointments?date=</td><td>รายการนัดวันนี้ (อาจหลายคลินิก) → appointmentId, clinicCode, doctor, time</td><td>3.1.9, 3.5</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/his/visits</td><td>เปิด Visit → ส่ง HN, clinicCode, eligibilityCode, queueRef → คืน <b>VN (Visit Number)</b></td><td>3.1.3, 3.1.4, 3.6.4</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/appointments/{id}/orders</td><td>order Lab/X-ray/หัตถการ ที่ผูกกับนัดครั้งก่อน (auto)</td><td>3.1.10, 3.6.8</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/his/patients</td><td>ลงทะเบียนผู้ป่วยใหม่ → คืน HN ใหม่</td><td>3.2.2–3.2.4</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.3 กลุ่มเภสัชกรรม & คลินิก (สำหรับคิวห้องยา 3.3.9)</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint</th><th>หน้าที่</th><th>TOR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/visits/{vn}/prescriptions</td><td>ใบสั่งยาปัจจุบัน + ประวัติย้อนหลัง (ชื่อยา, วิธีใช้)</td><td>3.3.9.1</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/patients/{hn}/allergies</td><td>ข้อมูลการแพ้ยา</td><td>3.3.9.2</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/visits/{vn}/vitalsigns</td><td>ค่า Vital Sign</td><td>3.3.9.4</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/visits/{vn}/notes</td><td>Patient Note, Visit Note, โน้ตจ่ายยา</td><td>3.3.9.3</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/visits/{vn}/lab-radiology</td><td>สถานะผล LAB/X-ray (สั่งแล้ว/กำลังดำเนินการ/ออกผลแล้ว)</td><td>3.3.7</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.4 กลุ่ม Billing (สำหรับ 3.8/3.9)</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint</th><th>หน้าที่</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/visits/{vn}/invoice</td><td>ยอดค้างชำระ + รายการค่ารักษา</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/his/visits/{vn}/payment-confirm</td><td>ยืนยันการชำระเงิน → trigger เตรียมยา</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/his/patients/{hn}/refillable-drugs</td><td>รายการยาที่ refill ได้ (Tele-pharmacy 3.9.3)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>ตัวอย่าง Response — ค้นผู้ป่วยจากบัตรประชาชน</h4>
+<pre><span class="c">// GET /his/patients?cid=1234567890123</span>
+{
+  <span class="k">"found"</span>: <span class="s">true</span>,
+  <span class="k">"hn"</span>: <span class="s">"00123456"</span>,
+  <span class="k">"cid"</span>: <span class="s">"1234567890123"</span>,
+  <span class="k">"title"</span>: <span class="s">"นาย"</span>,
+  <span class="k">"firstName"</span>: <span class="s">"สมชาย"</span>, <span class="k">"lastName"</span>: <span class="s">"ใจดี"</span>,
+  <span class="k">"birthDate"</span>: <span class="s">"1985-03-12"</span>, <span class="k">"gender"</span>: <span class="s">"M"</span>,
+  <span class="k">"mobile"</span>: <span class="s">"0812345678"</span>,
+  <span class="k">"photoBase64"</span>: <span class="s">"..."</span>,
+  <span class="k">"eligibilities"</span>: [
+    { <span class="k">"code"</span>: <span class="s">"UC"</span>, <span class="k">"name"</span>: <span class="s">"บัตรทอง"</span>, <span class="k">"mainHospital"</span>: <span class="s">"รพ.ก"</span>, <span class="k">"valid"</span>: <span class="s">true</span> },
+    { <span class="k">"code"</span>: <span class="s">"SELF"</span>, <span class="k">"name"</span>: <span class="s">"ชำระเงินเอง"</span>, <span class="k">"valid"</span>: <span class="s">true</span> }
+  ]
+}</pre>
+    </section>
+
+    <!-- NECESSITY -->
+    <section id="necessity">
+      <h2>★ ระดับความจำเป็นของแต่ละ API + ทางเลือกเมื่อ HIS ไม่เปิดให้</h2>
+      <p>ไม่ใช่ทุก API ที่ "ต้องมี" — บางอย่างถ้า HIS ไม่เปิด ก็ยังมี <b>ช่องทางอื่นทดแทนได้</b> ตารางนี้แยกระดับความจำเป็นและบอกทางออกแต่ละข้อ</p>
+      <div class="legbar">
+        <span><span class="nec n-must">จำเป็น</span> ขาดไม่ได้ถ้าจะเชื่อม HIS จริง (เลี่ยงได้แค่ทำ manual/standalone)</span>
+        <span><span class="nec n-should">ควรมี</span> ตรง TOR; ถ้าไม่มีพอมีทางเลือกที่ยอมรับได้</span>
+        <span><span class="nec n-opt">ทางเลือก</span> ใช้ช่องทางอื่นแทนได้ง่าย ไม่ต้องให้ HIS เปิด API</span>
+      </div>
+
+      <h3>กลุ่ม ① ระบุตัวตน / เปิด Visit (แกนเชื่อม HIS)</h3>
+      <table>
+        <thead><tr><th style="width:230px;">API / ความสามารถ</th><th class="c" style="width:84px;">ระดับ</th><th>ถ้าไม่มี API นี้ จะทำยังไง (ทางเลือก/ช่องทางแก้)</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /patients?cid=</code><br>ค้นผู้ป่วย/ได้ HN</td><td class="c"><span class="nec n-must">จำเป็น</span></td><td>
+            <span class="alt">ทางเลือก 1:</span> อ่านบัตรประชาชน <b>ในเครื่อง KIOSK ได้เลย</b> (ชื่อ-สกุล/วันเกิด/ที่อยู่/รูป อยู่ในชิปบัตร) — ได้ข้อมูลทั่วไป+รูปถ่าย <u>โดยไม่ต้องพึ่ง HIS</u> · <span class="alt">ทางเลือก 2:</span> เจ้าหน้าที่คีย์ HN เอง · <span class="alt">ทางเลือก 3:</span> Standalone mode — คิวออกเลขโดยไม่ผูกตัวตน (เฟส 1)</td></tr>
+          <tr><td><code>POST /visits</code><br>เปิด Visit → ได้ VN</td><td class="c"><span class="nec n-must">จำเป็น</span></td><td>
+            <span class="alt">ทางเลือกหลัก (Reverse flow):</span> ให้เจ้าหน้าที่เปิด Visit ใน HIS ตามปกติ แล้ว <b>HIS push VN กลับมาที่คิวผ่าน webhook</b> — คิวไม่ต้องเปิด Visit เอง · <span class="alt">ทางเลือก 2:</span> คิวเก็บแค่ HN ไว้ก่อน ค่อย map VN ภายหลัง</td></tr>
+          <tr><td><code>POST /eligibility/verify</code><br>ตรวจสิทธิ์ สปสช.</td><td class="c"><span class="nec n-should">ควรมี</span></td><td>
+            <span class="alt">ทางเลือก 1:</span> ใช้ <b>เครื่อง/แอปพิสูจน์ตัวตนของ สปสช. (NHSO) โดยตรง</b> ไม่ผ่าน HIS แล้วบันทึกผลกลับ · <span class="alt">ทางเลือก 2:</span> ให้ผู้ป่วย/เจ้าหน้าที่ <b>เลือกสิทธิ์เอง</b> จาก dropdown (ลดความ auto)</td></tr>
+          <tr><td><code>GET /patients/{hn}/eligibilities</code><br>รายการสิทธิ์ที่ใช้ได้</td><td class="c"><span class="nec n-should">ควรมี</span></td><td><span class="alt">ทางเลือก:</span> แสดงรายการสิทธิ์มาตรฐานให้เลือกเอง (บัตรทอง/ข้าราชการ/ชำระเอง) แล้วให้ HIS ตรวจตอนเปิด Visit จริง</td></tr>
+        </tbody>
+      </table>
+
+      <h3>กลุ่ม ② นัดหมาย & ลงทะเบียน</h3>
+      <table>
+        <thead><tr><th style="width:230px;">API / ความสามารถ</th><th class="c" style="width:84px;">ระดับ</th><th>ทางเลือก/ช่องทางแก้</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /appointments?date=</code><br>นัดวันนี้</td><td class="c"><span class="nec n-should">ควรมี</span></td><td><span class="alt">ทางเลือก 1:</span> <b>Batch import</b> รายการนัดเป็นไฟล์ (CSV/Excel) วันละครั้ง/scheduled · <span class="alt">ทางเลือก 2:</span> รับ <b>เฉพาะ walk-in</b> (ไม่ทำ flow นัด) · <span class="alt">ทางเลือก 3:</span> อ่าน QR ใบนัดที่ผู้ป่วยถือมา</td></tr>
+          <tr><td><code>GET /appointments/{id}/orders</code><br>order Lab/X-ray ผูกนัด</td><td class="c"><span class="nec n-opt">ทางเลือก</span></td><td><span class="alt">ทางเลือก:</span> เจ้าหน้าที่เปิดดูใน HIS เอง — คิวไม่ต้องดึง (ใช้ deep-link ไปหน้า HIS)</td></tr>
+          <tr><td><code>POST /patients</code><br>ลงทะเบียนผู้ป่วยใหม่</td><td class="c"><span class="nec n-should">ควรมี</span></td><td><span class="alt">ทางเลือก (Reverse):</span> เจ้าหน้าที่ลงทะเบียนใน HIS ตามปกติ → คิวอ่าน HN ใหม่ผ่าน <code>GET /patients?cid=</code> ภายหลัง (ไม่ต้องให้คิวเขียนข้อมูลเข้า HIS โดยตรง ซึ่งโรงพยาบาลมักไม่อนุญาต)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>กลุ่ม ③ ข้อมูลคลินิก/เภสัช (3.3.9) — แนะนำใช้ "ทางเลือก" เป็นหลัก</h3>
+      <table>
+        <thead><tr><th style="width:230px;">API / ความสามารถ</th><th class="c" style="width:84px;">ระดับ</th><th>ทางเลือก/ช่องทางแก้</th></tr></thead>
+        <tbody>
+          <tr><td><code>prescriptions / allergies</code><br><code>vitalsigns / notes</code><br>(ประวัติยา/แพ้ยา/Vital/Note)</td><td class="c"><span class="nec n-opt">ทางเลือก</span></td><td>
+            <span class="alt">แนะนำ — Deep-link / SSO:</span> แทนที่จะดึงข้อมูลแพทย์เข้าระบบคิว ให้ปุ่มในหน้าคิว <b>เปิดหน้าจอ HIS ของ Visit นั้นโดยตรง</b> (ส่ง VN เป็น context) — เภสัชกรดูข้อมูลใน HIS ที่คุ้นเคย <u>ลดงาน, ลดความเสี่ยง PDPA, ไม่ต้องให้ HIS เปิด API ข้อมูลอ่อนไหว</u> · <span class="alt">ทางเลือก 2:</span> iframe ฝังหน้า HIS</td></tr>
+          <tr><td><code>GET /visits/{vn}/lab-radiology</code><br>สถานะผล LAB/X-ray (3.3.7)</td><td class="c"><span class="nec n-opt">ทางเลือก</span></td><td><span class="alt">ทางเลือก 1:</span> <b>Polling</b> สถานะทุก N วินาที (ถ้าไม่มี webhook) · <span class="alt">ทางเลือก 2:</span> เจ้าหน้าที่ <b>กดอัปเดตสถานะเอง</b>ในคิว · <span class="alt">ทางเลือก 3:</span> deep-link ไป LIS/RIS</td></tr>
+          <tr><td>พิมพ์ Label ใบสั่งยา / แจ้งแพทย์ยาผิด (3.3.9.8–9)</td><td class="c"><span class="nec n-opt">ทางเลือก</span></td><td><span class="alt">ทางเลือก:</span> ใช้ฟังก์ชันของ HIS/ระบบเภสัชเดิม — คิวทำหน้าที่แค่ "เรียกคิว" ไม่ทับซ้อนงานเภสัช</td></tr>
+        </tbody>
+      </table>
+
+      <h3>กลุ่ม ④ ชำระเงิน & จ่ายยา (3.8/3.9)</h3>
+      <table>
+        <thead><tr><th style="width:230px;">API / ความสามารถ</th><th class="c" style="width:84px;">ระดับ</th><th>ทางเลือก/ช่องทางแก้</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /visits/{vn}/invoice</code><br>ยอดค้างชำระ</td><td class="c"><span class="nec n-should">ควรมี</span></td><td><span class="alt">ทางเลือก:</span> ใช้ระบบการเงิน/แคชเชียร์เดิมของโรงพยาบาล — คิวรับแค่สัญญาณ "ชำระแล้ว"</td></tr>
+          <tr><td>Webhook <code>payment-completed</code><br>แจ้งชำระเงินแล้ว</td><td class="c"><span class="nec n-should">ควรมี</span></td><td><span class="alt">ทางเลือก:</span> เจ้าหน้าที่การเงิน <b>กดยืนยัน "ชำระแล้ว" ในคิว</b> → trigger ส่งคิวจัดยา (manual แทน auto)</td></tr>
+          <tr><td><code>GET /refillable-drugs</code><br>ยา refill (Tele-pharmacy)</td><td class="c"><span class="nec n-opt">ทางเลือก</span></td><td><span class="alt">ทางเลือก:</span> เฉพาะเมื่อทำ Tele-pharmacy เท่านั้น — ถ้ายังไม่อยู่ใน scope เฟสแรก ข้ามได้</td></tr>
+        </tbody>
+      </table>
+
+      <h3>กลุ่ม ⑤ Real-time (Webhook vs Polling)</h3>
+      <table>
+        <thead><tr><th style="width:230px;">ความสามารถ</th><th class="c" style="width:84px;">ระดับ</th><th>ทางเลือก/ช่องทางแก้</th></tr></thead>
+        <tbody>
+          <tr><td>HIS push event (webhook) เช่น <code>appointment-created</code>, <code>order-status</code></td><td class="c"><span class="nec n-opt">ทางเลือก</span></td><td><span class="alt">ถ้า HIS ไม่รองรับ push:</span> ใช้ <b>Polling</b> เรียก API เช็คเป็นรอบ ๆ แทน — ได้ผลเหมือนกันแต่หน่วงและกิน resource มากกว่า กำหนดความถี่ให้พอเหมาะ</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note tip"><b>สรุปชุด API ขั้นต่ำสำหรับเฟส 1 (MVP เชื่อม HIS):</b> ต้องมีจริง ๆ แค่ <b>① ค้นผู้ป่วย/ได้ HN</b> และ <b>② ผูก Visit (VN)</b> — สองตัวนี้ทำให้คิวเชื่อมกับ HIS ได้ ส่วนข้อมูลคลินิก/เภสัช/การเงิน <b>ใช้ deep-link ไป HIS + manual + polling ไปก่อน</b> แล้วค่อยอัปเกรดเป็น API จริงในเฟสถัดไป</div>
+      <div class="note"><b>หลักคิด:</b> ทุกครั้งที่ HIS ไม่เปิด API ให้ มี 4 ทางออกมาตรฐาน → <b>(1) อ่านบัตร/ข้อมูลในเครื่อง</b> · <b>(2) Deep-link/SSO ไปหน้า HIS</b> · <b>(3) Manual โดยเจ้าหน้าที่</b> · <b>(4) Batch import / Polling</b> เลือกตามว่าต้องการความ real-time แค่ไหน</div>
+    </section>
+
+    <!-- 4 -->
+    <section id="queue-api">
+      <h2>4. API / Event ที่ระบบคิวต้องเปิดให้ (Queue → HIS / ระบบอื่นเรียกใช้)</h2>
+      <p>เพื่อให้เป็นการเชื่อม <b>สองทาง</b> ระบบคิวต้องเปิดบริการกลับด้วย 2 กลุ่ม:</p>
+
+      <h3>4.1 Webhook Receiver (HIS/ระบบอื่น ส่งเข้ามาที่คิว)</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint (ที่คิวเปิด)</th><th>หน้าที่</th><th>TOR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/appointment-created</td><td>HIS แจ้งว่ามีการจองนัด → ระบบคิว <b>activate คิวอัตโนมัติ</b></td><td>3.5.1.5</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/order-status</td><td>HIS แจ้งสถานะผล LAB/X-ray เปลี่ยน → ปลดล็อค/จัดลำดับคิว</td><td>3.3.7</td></tr>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/queue/webhooks/payment-completed</td><td>Payment/HIS แจ้งชำระเงินแล้ว → <b>ส่งคิวไปจุดจัดยาอัตโนมัติ</b></td><td>3.8.5, 3.9.6</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.2 Queue Service API (ให้ HIS/LINE/Portal ดึงสถานะคิว)</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Endpoint</th><th>หน้าที่</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td class="mono">/api/queue/create</td><td>ออกบัตรคิว (มีอยู่แล้ว) — เพิ่มรับ HN/VN/priority</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/api/queue/status?vn={vn}</td><td>สถานะ/ลำดับคิวของ Visit (ให้ LINE/Portal/HIS แสดง)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td class="mono">/api/queue/get-queue-summary</td><td>สรุปคิวตามแผนก (มีอยู่แล้ว)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.3 Event ที่ระบบคิว Publish ออก (ให้ HIS/LINE Subscribe)</h3>
+      <table>
+        <thead><tr><th>Event</th><th>ยิงเมื่อ</th><th>ผู้บริโภค</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method evt">queue.checkedin</span></td><td>ผู้ป่วยเช็คอินหน้าแผนก</td><td>HIS (update visit), Dashboard</td></tr>
+          <tr><td><span class="method evt">queue.called</span></td><td>เรียกคิวที่เคาน์เตอร์</td><td>LINE OA (แจ้งผู้ป่วย), HIS</td></tr>
+          <tr><td><span class="method evt">queue.completed</span></td><td>เสร็จบริการ/ส่งต่อ</td><td>HIS (patient flow), Dashboard</td></tr>
+          <tr><td><span class="method evt">pharmacy.ready</span></td><td>ยาพร้อมจ่าย/พร้อมส่ง</td><td>LINE OA + Pickup Code</td></tr>
+        </tbody>
+      </table>
+
+      <h4>ตัวอย่าง Webhook ขาเข้า — HIS แจ้งนัดใหม่</h4>
+<pre><span class="c">// POST /queue/webhooks/appointment-created  (HIS → Queue)</span>
+{
+  <span class="k">"eventId"</span>: <span class="s">"evt-7f3a..."</span>,        <span class="c">// idempotency key</span>
+  <span class="k">"hn"</span>: <span class="s">"00123456"</span>,
+  <span class="k">"appointmentId"</span>: <span class="s">"APT-2026-0099"</span>,
+  <span class="k">"clinicCode"</span>: <span class="s">"MED"</span>,
+  <span class="k">"doctorCode"</span>: <span class="s">"D015"</span>,
+  <span class="k">"appointmentTime"</span>: <span class="s">"2026-06-27T09:30:00+07:00"</span>,
+  <span class="k">"eligibilityCode"</span>: <span class="s">"UC"</span>
+}</pre>
+    </section>
+
+    <!-- 5 -->
+    <section id="seq">
+      <h2>5. Sequence Flows (สถานการณ์จริง)</h2>
+
+      <h3>5.1 Walk-in: กดบัตร → ตรวจสิทธิ์ → เปิด Visit → เข้าคิว</h3>
+      <div class="seq">
+        <div class="step"><div class="who c">KIOSK</div><div class="act">ผู้ป่วยเสียบบัตรประชาชน → อ่าน CID + ถ่ายรูป</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-out">→ HIS</span> <code>GET /his/patients?cid=</code> ตรวจว่ามีประวัติไหม</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-out">→ HIS/NHSO</span> <code>POST /his/eligibility/verify</code> ตรวจสิทธิ์ สปสช.</div></div>
+        <div class="step"><div class="who c">KIOSK</div><div class="act">ผู้ป่วยเลือกคลินิก + เลือกสิทธิ์ที่จะใช้</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-out">→ HIS</span> <code>POST /his/visits</code> เปิด Visit → ได้ <b>VN</b></div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act">สร้างบัตรคิว (ผูก HN+VN) → พิมพ์บัตร + QR</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-in">⚡ SignalR</span> TriggerQueueChange → จอ TV + Dashboard อัปเดต</div></div>
+      </div>
+
+      <h3>5.2 มาตามนัด: เช็คอินหน้าแผนก (auto เปิด Visit หลายคลินิก)</h3>
+      <div class="seq">
+        <div class="step"><div class="who h">HIS</div><div class="act"><span class="dir d-in">→ Queue</span> (ล่วงหน้า) webhook <code>appointment-created</code> → คิว pre-load นัด</div></div>
+        <div class="step"><div class="who c">Check-in</div><div class="act">ผู้ป่วยสแกนบัตร/QR ที่ตู้ Check-in</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-out">→ HIS</span> <code>GET /appointments?date=</code> ดึงนัดวันนี้ (หลายคลินิก)</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-out">→ HIS</span> <code>POST /his/visits</code> เปิด Visit ครบทุกคลินิก + ดึง order Lab/X-ray ที่ผูกไว้</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act">เช็คอินเข้าคิวแต่ละแผนก → แสดงลำดับคิว</div></div>
+      </div>
+
+      <h3>5.3 ห้องยา + ชำระเงิน (Smart Dispensing)</h3>
+      <div class="seq">
+        <div class="step"><div class="who q">Queue</div><div class="act">เรียกคิวห้องยา → <span class="dir d-out">→ HIS</span> ดึง prescription / allergy / vital / note</div></div>
+        <div class="step"><div class="who e">Payment</div><div class="act">ผู้ป่วยชำระเงินผ่านแอป/เว็บ</div></div>
+        <div class="step"><div class="who e">Payment</div><div class="act"><span class="dir d-in">→ Queue</span> webhook <code>payment-completed</code></div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act">ส่งคิวไปจุดจัดยาอัตโนมัติ + แยกช่องทาง (รับเอง/ส่งบ้าน) + สร้าง Pickup Code</div></div>
+        <div class="step"><div class="who q">Queue</div><div class="act"><span class="dir d-in">⚡ event</span> <code>pharmacy.ready</code> → LINE OA แจ้งผู้ป่วย + Pickup Code</div></div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="mapping">
+      <h2>6. Master Data Mapping (จุดที่มักพลาด)</h2>
+      <p>ก่อนเชื่อมได้ ต้อง <b>จับคู่รหัส master</b> ระหว่างระบบคิวกับ HIS ให้ตรงกัน มิฉะนั้นคิวจะวิ่งผิดแผนก</p>
+      <table>
+        <thead><tr><th>ระบบคิว (HAOS)</th><th>HIS</th><th>วิธีจับคู่</th></tr></thead>
+        <tbody>
+          <tr><td><code>TbmRoom</code> (ห้อง/จุดบริการ) + <code>Code</code></td><td>Clinic / Department / Ward code</td><td>เพิ่มฟิลด์ <code>HisClinicCode</code> ใน Room เพื่อ map 1:1</td></tr>
+          <tr><td><code>TbmServiceType</code> (ประเภทบริการ)</td><td>Service / Clinic sub-type</td><td>เพิ่ม <code>HisServiceCode</code></td></tr>
+          <tr><td>Queue / Ticket</td><td>Visit (VN) + HN</td><td>เก็บ <code>HN</code>, <code>VN</code>, <code>AppointmentId</code> ใน TbQueue/TbQueueService</td></tr>
+          <tr><td>ServiceGroup</td><td>สิทธิ์ (Eligibility/Payer)</td><td>เก็บ <code>EligibilityCode</code> ที่ผู้ป่วยเลือก</td></tr>
+          <tr><td>Priority (ใหม่)</td><td>Triage level / urgency</td><td>เพิ่มฟิลด์ <code>PriorityLevel</code> รองรับคิวลัด/ER</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>คิดเพิ่ม:</b> ควรทำตาราง mapping เป็น <b>config (UI ตั้งค่าได้)</b> ไม่ hardcode เพราะรหัสคลินิก/แผนกแต่ละโรงพยาบาลไม่เหมือนกัน และอาจเปลี่ยน — สอดคล้องกับ TOR ที่ย้ำ "กำหนดโดยผู้ควบคุมระบบของโรงพยาบาล"</div>
+    </section>
+
+    <!-- 7 -->
+    <section id="security">
+      <h2>7. Security & PDPA (ข้อมูลสุขภาพ= ข้อมูลอ่อนไหว)</h2>
+      <ul>
+        <li><b>API Gateway</b> เป็นด่านเดียว: OAuth2 Client Credentials หรือ API Key ต่อระบบ + <b>mTLS</b> ระหว่างคิว ↔ HIS</li>
+        <li><b>IP Allowlist</b> + Rate limiting + WAF ที่ Gateway</li>
+        <li><b>Audit log</b> ทุก request ที่แตะข้อมูลผู้ป่วย (ใคร/เมื่อ/ดึงอะไร) — ระบบมี <code>RequestResponseLoggingMiddleware</code> อยู่แล้ว ต่อยอดได้</li>
+        <li><b>PDPA / ข้อมูลสุขภาพ:</b> ดึงข้อมูลเท่าที่จำเป็น (data minimization), ไม่เก็บข้อมูลทางการแพทย์ถาวรในฝั่งคิวถ้าไม่จำเป็น (ดึง on-demand แล้วทิ้ง), เข้ารหัสข้อมูลพักชั่วคราว, มีการจัดการความยินยอม (consent) สำหรับ LINE OA</li>
+        <li><b>Idempotency</b> ทุก webhook (eventId) กัน event ซ้ำ + <b>retry with backoff</b> + dead-letter queue</li>
+        <li><b>Token จาก KIOSK/ตู้</b> ควรเป็น device token แยก ไม่ใช้สิทธิ์ผู้ใช้ทั่วไป</li>
+      </ul>
+    </section>
+
+    <!-- 8 -->
+    <section id="checklist">
+      <h2>8. Checklist — คำถามที่ต้องเคลียร์กับทีม HIS ก่อนเริ่ม</h2>
+      <p>คำถามเหล่านี้ชี้ขาด scope/ความเสี่ยง ควรถามให้ครบก่อนประเมินงาน:</p>
+      <table>
+        <thead><tr><th>#</th><th>คำถาม</th><th>ทำไมสำคัญ</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>HIS ยี่ห้ออะไร? (HOSxP / JHCIS / SSB / Vendor เฉพาะ) และมี API Gateway/middleware อยู่แล้วไหม</td><td>กำหนดมาตรฐาน (REST/HL7/FHIR) และความพร้อม</td></tr>
+          <tr><td>2</td><td>รองรับ <b>REST/JSON</b>, <b>HL7 v2</b>, หรือ <b>FHIR</b> แบบใด?</td><td>กำหนดรูปแบบ payload + effort การ map</td></tr>
+          <tr><td>3</td><td>มี API <b>ค้นผู้ป่วย/เปิด Visit/ดึงนัด</b> ให้เรียกได้หรือไม่ หรือต้องพัฒนาเพิ่มฝั่ง HIS?</td><td>ถ้า HIS ยังไม่เปิด = งานเพิ่มฝั่งโรงพยาบาล (นอกการควบคุมเรา)</td></tr>
+          <tr><td>4</td><td>รองรับ <b>Webhook/Event push</b> ไหม หรือทำได้แค่ให้ polling?</td><td>กำหนดสถาปัตยกรรม async vs polling</td></tr>
+          <tr><td>5</td><td>การตรวจสิทธิ์ <b>สปสช.</b> เรียกผ่าน HIS หรือต้องต่อ NHSO เอง? ใช้เครื่องอ่านบัตรรุ่นไหน/SDK อะไร?</td><td>NHSO มีระบบพิสูจน์ตัวตน — ต้องรู้ช่องทางจริง</td></tr>
+          <tr><td>6</td><td>รหัส master (clinic/department/doctor/payer) มี dictionary ให้ map ไหม?</td><td>จำเป็นต่อ master data mapping (ข้อ 6)</td></tr>
+          <tr><td>7</td><td>ข้อมูลเภสัช (ยา/แพ้ยา/vital/lab) ดึงได้ระดับไหน และสิทธิ์การเข้าถึง?</td><td>ตัดสิน scope ข้อ 3.3.9 / Tele-pharmacy</td></tr>
+          <tr><td>8</td><td>Payment Gateway ที่โรงพยาบาลใช้คือเจ้าไหน? เชื่อมผ่าน HIS หรือตรง?</td><td>scope ข้อ 3.8/3.9</td></tr>
+          <tr><td>9</td><td>LINE OA ของโรงพยาบาลมีแล้วหรือยัง? ใครถือ channel/credential?</td><td>scope ข้อ 3.7 + แจ้งเตือน</td></tr>
+          <tr><td>10</td><td>ปริมาณ transaction สูงสุด/วัน + SLA ของ HIS API (response time, downtime)?</td><td>ออกแบบ timeout, caching, fallback</td></tr>
+        </tbody>
+      </table>
+      <div class="note crit"><b>ความเสี่ยงหลัก:</b> ความสำเร็จของการเชื่อม HIS <b>ขึ้นกับว่า HIS เปิด API อะไรให้</b> — ซึ่งอยู่นอกการควบคุมของทีมพัฒนาระบบคิว ควรระบุใน TOR/สัญญาให้ชัดว่า "โรงพยาบาลต้องจัดเตรียม API/เอกสารสเปกจาก HIS vendor" เป็น dependency มิฉะนั้นงานอาจ block</div>
+    </section>
+
+    <footer>HIS Integration Design · ระบบคิว HAOS Queue ⇄ HIS · เอกสารอ้างอิงเชิงเทคนิค · 2026-06-26</footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gap Analysis — TOR Smart Queue เทียบระบบ HAOS Queue</title>
+<style>
+  :root{
+    --primary:#1e6091; --primary-light:#168aad; --accent:#34a0a4; --bg:#f4f7fa;
+    --card:#fff; --text:#2b2d31; --muted:#5c6670; --border:#e1e7ed; --code-bg:#f0f4f8;
+    --yes:#22c55e; --partial:#f59e0b; --no:#ef4444; --hw:#8b9bb0;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.65;font-size:14.5px;}
+  .layout{display:flex;max-width:1440px;margin:0 auto;}
+  .sidebar{width:280px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:22px 16px;}
+  .sidebar h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 12px;}
+  .sidebar a{display:block;padding:6px 10px;border-radius:7px;color:var(--text);text-decoration:none;font-size:13px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .sidebar .leg{margin-top:18px;font-size:12.5px;}
+  .sidebar .leg div{margin:5px 0;display:flex;align-items:center;gap:8px;}
+  .content{flex:1;padding:32px 42px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 60%,var(--accent));color:#fff;border-radius:16px;padding:30px 34px;margin-bottom:26px;box-shadow:0 10px 30px rgba(30,96,145,.25);}
+  .hero h1{margin:0 0 6px;font-size:26px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:20px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 14px;font-size:19px;color:var(--primary);padding-bottom:10px;border-bottom:2px solid var(--code-bg);}
+  h3{color:var(--primary-light);font-size:15.5px;margin:18px 0 8px;}
+  p{margin:8px 0;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:"Cascadia Code",Consolas,monospace;font-size:12.3px;}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.2px;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  thead th{background:var(--primary);color:#fff;text-align:left;padding:9px 12px;font-weight:600;}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafcfe;}
+  tbody tr:hover{background:#eef6fb;}
+  td.c{text-align:center;white-space:nowrap;}
+  .col-id{width:52px;color:var(--muted);font-family:monospace;font-size:12px;}
+  .col-st{width:74px;}
+
+  .st{display:inline-block;padding:3px 9px;border-radius:14px;font-size:11.5px;font-weight:700;color:#fff;white-space:nowrap;}
+  .s-yes{background:var(--yes);} .s-partial{background:var(--partial);} .s-no{background:var(--no);} .s-hw{background:var(--hw);}
+
+  /* scorecard */
+  .score{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0 6px;}
+  .sc{border-radius:14px;padding:18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);}
+  .sc .n{font-size:34px;font-weight:800;line-height:1;}
+  .sc .l{font-size:13px;margin-top:6px;opacity:.95;}
+  .sc.yes{background:linear-gradient(135deg,#16a34a,#22c55e);}
+  .sc.partial{background:linear-gradient(135deg,#d97706,#f59e0b);}
+  .sc.no{background:linear-gradient(135deg,#dc2626,#ef4444);}
+  .sc.hw{background:linear-gradient(135deg,#64748b,#8b9bb0);}
+
+  /* progress bars per module */
+  .mod{margin:10px 0;}
+  .mod .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;}
+  .bar{height:14px;border-radius:8px;background:#e9eef3;overflow:hidden;display:flex;}
+  .bar i{display:block;height:100%;}
+  .bar .by{background:var(--yes);} .bar .bp{background:var(--partial);} .bar .bn{background:var(--no);} .bar .bh{background:var(--hw);}
+
+  .note{background:#fff8e6;border-left:4px solid var(--partial);padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13.5px;}
+  .note.tip{background:#e9f7ef;border-left-color:var(--yes);}
+  .note.crit{background:#fdeaea;border-left-color:var(--no);}
+
+  @media(max-width:900px){.sidebar{display:none;}.content{padding:18px;}.score{grid-template-columns:repeat(2,1fr);}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>สารบัญ</h2>
+    <a href="#sum">▸ บทสรุปผู้บริหาร</a>
+    <a href="#score">▸ ภาพรวมคะแนน</a>
+    <a href="#m31">3.1 คัดกรอง/ตรวจสิทธิ์</a>
+    <a href="#m32">3.2 ลงทะเบียนผู้ป่วยใหม่</a>
+    <a href="#m33">3.3 เรียกคิวผู้ป่วย</a>
+    <a href="#m34">3.4 จอแสดงคิว</a>
+    <a href="#m35">3.5 นัดหมายผู้ป่วย</a>
+    <a href="#m36">3.6 ยืนยันหน้าแผนก</a>
+    <a href="#m37">3.7 แจ้งเตือน (Line OA)</a>
+    <a href="#m38">3.8 Smart Dispensing</a>
+    <a href="#m39">3.9 Tele-pharmacy</a>
+    <a href="#m310">3.10–3.11 ตู้ KIOSK/Check-in</a>
+    <a href="#m4">4–5 อุปกรณ์ & เงื่อนไข</a>
+    <a href="#concl">▸ ข้อสรุป & ข้อเสนอแนะ</a>
+    <div class="leg">
+      <h2>สัญลักษณ์</h2>
+      <div><span class="st s-yes">ทำได้</span> มีในระบบแล้ว</div>
+      <div><span class="st s-partial">บางส่วน</span> ปรับ/ต่อยอดได้</div>
+      <div><span class="st s-no">ยังไม่ได้</span> ต้องพัฒนาใหม่</div>
+      <div><span class="st s-hw">HW</span> ฮาร์ดแวร์/นอกซอฟต์แวร์</div>
+    </div>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>Gap Analysis — TOR Smart Queue (โรงพยาบาล)</h1>
+      <p>เทียบความต้องการใน <b>"Draft TOR — Smart Queue"</b> กับความสามารถของระบบ <b>HAOS Queue</b> ปัจจุบัน</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">วันที่วิเคราะห์: 2026-06-26 · อ้างอิง source code + เอกสาร Flow ระบบ</p>
+    </div>
+
+    <!-- SUMMARY -->
+    <section id="sum">
+      <h2>บทสรุปผู้บริหาร</h2>
+      <p>TOR ฉบับนี้เป็นสเปก <b>ระบบบริหารคิวโรงพยาบาล (Hospital Smart Queue)</b> ที่ผูกแน่นกับระบบสารสนเทศโรงพยาบาล (HIS), การตรวจสอบสิทธิ์ สปสช., บัตรประชาชน, การนัดหมาย, แจ้งเตือนผ่าน Line OA, ชำระเงินออนไลน์, จ่ายยา/ส่งยา และ Tele-pharmacy พร้อม <b>ฮาร์ดแวร์ตู้ KIOSK/Check-in</b></p>
+      <p>ระบบ <b>HAOS Queue</b> ปัจจุบันเป็น <b>"แกนกลางจัดการคิวทั่วไป" (General Queue Engine)</b> ที่แข็งแรงในเรื่อง: การออกบัตรคิว, เช็คอิน, เรียก/ส่งต่อ/พัก/เรียกซ้ำ, จอแสดงผล TV, และอัปเดต Real-time ผ่าน SignalR</p>
+      <div class="note tip"><b>สรุปสั้น:</b> ระบบปัจจุบันครอบคลุม <b>"กลไกคิว" (calling / display / check-in / real-time)</b> ได้ดี — ตรงกับข้อ 3.3, 3.4, 3.6 บางส่วน และข้อ WebSocket ได้เต็ม ✅ &nbsp;|&nbsp; แต่ <b>ยังขาดทั้งหมด</b> ในส่วนที่เป็น "หัวใจทางการแพทย์/โรงพยาบาล": HIS, สปสช., บัตรประชาชน, ข้อมูลผู้ป่วย/Visit, นัดหมาย (3.5), Line OA (3.7), ชำระเงิน/จ่ายยา (3.8), Tele-pharmacy (3.9)</div>
+      <div class="note crit"><b>ประเด็นสำคัญ:</b> ฟีเจอร์ที่ "ยังไม่มี" ส่วนใหญ่ <b>ไม่ใช่งานปรับเล็กน้อย</b> แต่เป็นโมดูลใหม่ที่ต้องเชื่อมต่อระบบภายนอก (HIS API Gateway, NHSO, ID Card Reader, LINE OA, Payment Gateway) ซึ่งต้องอาศัยความร่วมมือ/สเปก API จากโรงพยาบาลและ Third party</div>
+    </section>
+
+    <!-- SCORECARD -->
+    <section id="score">
+      <h2>ภาพรวมคะแนน (เฉพาะข้อกำหนดด้านซอฟต์แวร์ 3.1–3.9)</h2>
+      <div class="score">
+        <div class="sc yes"><div class="n">8</div><div class="l">✅ ทำได้ (มีในระบบ)</div></div>
+        <div class="sc partial"><div class="n">14</div><div class="l">🟡 ทำได้บางส่วน</div></div>
+        <div class="sc no"><div class="n">41</div><div class="l">❌ ยังทำไม่ได้</div></div>
+        <div class="sc hw"><div class="n">22</div><div class="l">🔧 ฮาร์ดแวร์/เงื่อนไข</div></div>
+      </div>
+      <p class="muted" style="font-size:12.5px;color:var(--muted);">* นับแบบประมาณตามข้อย่อยใน TOR เพื่อให้เห็นสัดส่วน — ข้อ 3.10/3.11/4/5 เป็นฮาร์ดแวร์และเงื่อนไขสัญญา ไม่ใช่ความสามารถซอฟต์แวร์</p>
+
+      <h3>ความครอบคลุมรายโมดูล</h3>
+      <div class="mod"><div class="top"><span>3.1 คัดกรอง/ตรวจสอบสิทธิ์</span><span>ต่ำ</span></div><div class="bar"><i class="by" style="width:9%"></i><i class="bp" style="width:9%"></i><i class="bn" style="width:82%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.2 ลงทะเบียนผู้ป่วยใหม่</span><span>ต่ำ</span></div><div class="bar"><i class="by" style="width:14%"></i><i class="bp" style="width:14%"></i><i class="bn" style="width:72%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.3 เรียกคิวผู้ป่วย</span><span>ปานกลาง</span></div><div class="bar"><i class="by" style="width:5%"></i><i class="bp" style="width:45%"></i><i class="bn" style="width:50%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.4 จอแสดงคิว</span><span>สูง</span></div><div class="bar"><i class="by" style="width:50%"></i><i class="bp" style="width:33%"></i><i class="bn" style="width:17%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.5 นัดหมายผู้ป่วย</span><span>ไม่มี</span></div><div class="bar"><i class="bn" style="width:100%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.6 ยืนยันหน้าแผนก</span><span>ปานกลาง</span></div><div class="bar"><i class="by" style="width:30%"></i><i class="bp" style="width:10%"></i><i class="bn" style="width:60%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.7 แจ้งเตือน Line OA</span><span>ไม่มี</span></div><div class="bar"><i class="bn" style="width:100%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.8 Smart Dispensing</span><span>ไม่มี</span></div><div class="bar"><i class="bn" style="width:100%"></i></div></div>
+      <div class="mod"><div class="top"><span>3.9 Tele-pharmacy</span><span>ไม่มี</span></div><div class="bar"><i class="bn" style="width:100%"></i></div></div>
+    </section>
+
+    <!-- 3.1 -->
+    <section id="m31">
+      <h2>3.1 โปรแกรมคัดกรอง ตรวจสอบสิทธิ์ และข้อมูลผู้ป่วย</h2>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการตาม TOR</th><th class="col-st c">สถานะ</th><th>ระบบทำได้แบบไหน / ต้องพัฒนาอะไร</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.1.1</td><td>คัดแยกสถานะผู้ป่วยตามสิทธิ์และความเร่งด่วน</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>มี ServiceGroup/ประเภทบริการ แต่<b>ไม่มีระบบสิทธิ์ (entitlement) และคิวเร่งด่วน (priority/triage)</b> — ต้องเพิ่มฟิลด์ความเร่งด่วน + ตรรกะคิวลัด</td></tr>
+          <tr><td class="col-id">3.1.2</td><td>ตรวจสอบสิทธิ์ สปสช. ผ่านบัตรประชาชน + บันทึกรูปถ่าย</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มีการเชื่อม NHSO, ไม่มี ID Card Reader integration, ไม่มีถ่ายรูป — ต้องพัฒนาใหม่ทั้งหมด</td></tr>
+          <tr><td class="col-id">3.1.3</td><td>ส่งข้อมูลเปิดลงทะเบียนผ่าน HIS (API Gateway)</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มี integration กับ HIS — ต้องสร้าง connector ตามสเปก API ของโรงพยาบาล</td></tr>
+          <tr><td class="col-id">3.1.4</td><td>ตรวจประวัติผู้ป่วย + เลือกคลินิก + เปิด Visit</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มีแนวคิด Patient/Visit ในระบบ (มีเฉพาะ Queue/Service) — ต้องเพิ่มโมเดลผู้ป่วยและ Visit</td></tr>
+          <tr><td class="col-id">3.1.5</td><td>แสดงสิทธิ์ที่ใช้ได้ (บัตรทอง/ข้าราชการ/ชำระเอง) ให้เลือก</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มีข้อมูลสิทธิ์ — ขึ้นกับการเชื่อม สปสช./HIS</td></tr>
+          <tr><td class="col-id">3.1.6</td><td>พิมพ์บัตรคิว (รหัสการรักษา/ข้อมูลผู้ป่วย/QR) ปรับแต่งโดยผู้ดูแล</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ ระบบออกบัตรคิว + <b>QueueKey (GUID) สำหรับ QR</b> ได้ &nbsp;✘ แต่บัตรมีแค่เลขคิว ไม่มีข้อมูลผู้ป่วย และ layout ปรับแต่งเองยังจำกัด — ต่อยอดจาก report engine (Stimulsoft) ได้</td></tr>
+          <tr><td class="col-id">3.1.7-8</td><td>ตรวจประวัติผู้ป่วย + เลือกคลินิก + เปิด Visit</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>เหมือน 3.1.4 — ต้องมีโมเดลผู้ป่วย/Visit + เชื่อม HIS</td></tr>
+          <tr><td class="col-id">3.1.9</td><td>เปิด Visit จากนัดหมายหลายคลินิกในวันเดียวกัน</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มีโมดูลนัดหมาย (ดู 3.5) และ Visit</td></tr>
+          <tr><td class="col-id">3.1.10</td><td>ตรวจนัด Lab/X-ray/หัตถการ ที่ผูกกับนัดก่อนหน้าอัตโนมัติ</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องเชื่อม HIS/LIS/RIS</td></tr>
+          <tr><td class="col-id">3.1.11</td><td>รองรับ WebSocket ลดภาระดึงข้อมูล/จัดลำดับคิวซ้ำ</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ <b>ตรงสเปก</b> — ระบบใช้ <b>SignalR (WebSocket)</b> ผ่าน <code>EventHub</code> ยิง event แบบ push (TriggerQueueChange/Calling) อยู่แล้ว</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.2 -->
+    <section id="m32">
+      <h2>3.2 โปรแกรมลงทะเบียนผู้ป่วยใหม่</h2>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการตาม TOR</th><th class="col-st c">สถานะ</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.2.1</td><td>ตรวจว่าผู้ป่วยมีประวัติการรักษาแล้วหรือยัง</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มีฐานข้อมูลผู้ป่วย — ต้องเชื่อม HIS</td></tr>
+          <tr><td class="col-id">3.2.2-3</td><td>บันทึกข้อมูลลงทะเบียน + ยืนยันก่อนบันทึก</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มีฟอร์มลงทะเบียนผู้ป่วย — ต้องพัฒนาโมดูลใหม่</td></tr>
+          <tr><td class="col-id">3.2.4</td><td>ส่งข้อมูลลงทะเบียนผ่าน HIS (API Gateway)</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องสร้าง HIS connector</td></tr>
+          <tr><td class="col-id">3.2.5</td><td>ส่งข้อมูลยืนยันการลงทะเบียนผ่าน Line OA</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มี Line OA integration</td></tr>
+          <tr><td class="col-id">3.2.6</td><td>แสดงข้อมูลให้เจ้าหน้าที่ที่เกี่ยวข้องรับทราบ</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ มีหน้าจอเจ้าหน้าที่ + แจ้งแบบ real-time อยู่แล้ว — แต่ต้องผูกกับข้อมูลผู้ป่วยที่ยังไม่มี</td></tr>
+          <tr><td class="col-id">3.2.7</td><td>รองรับ Responsive ทั้ง Mobile และ Monitor</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ Frontend เป็น Angular + responsive และมีหน้า Mobile (<code>/mobile/*</code>) อยู่แล้ว</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.3 -->
+    <section id="m33">
+      <h2>3.3 โปรแกรมเรียกคิวผู้ป่วย <span style="font-size:13px;color:var(--muted);">(โมดูลที่ระบบใกล้เคียงที่สุด)</span></h2>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการตาม TOR</th><th class="col-st c">สถานะ</th><th>ระบบทำได้แบบไหน</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.3.1</td><td>เรียกคิวตามลำดับเวลามา / เวลาถึงจุดบริการ / เวลานัด</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ เรียกแบบ FIFO ตามเวลาเช็คอินได้ (NextAsync auto-select เก่าสุด) &nbsp;✘ "ตามเวลานัด" ยังไม่มี (ไม่มีโมดูลนัด)</td></tr>
+          <tr><td class="col-id">3.3.2</td><td>เรียกลัดคิวตามความเร่งด่วนอัตโนมัติ</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มี priority/urgency — ต้องเพิ่มลำดับความสำคัญและตรรกะคิวลัด</td></tr>
+          <tr><td class="col-id">3.3.3</td><td>ค้นหาผู้ป่วยเพื่อเรียกคิวแบบเฉพาะเจาะจง</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ เรียกคิวเฉพาะเจาะจงได้ด้วย <code>QueueId</code>/เลขคิว &nbsp;✘ แต่ค้นจาก "ข้อมูลผู้ป่วย" (ชื่อ/HN) ยังไม่ได้</td></tr>
+          <tr><td class="col-id">3.3.4</td><td>เรียกคิวตามตรรกะที่โรงพยาบาลกำหนด</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ รองรับ FIFO + เรียกเอง + ส่งต่อ (Forward) ข้ามห้อง/บริการ &nbsp;✘ ตรรกะซับซ้อนเฉพาะทางต้องปรับเพิ่ม</td></tr>
+          <tr><td class="col-id">3.3.5</td><td>แสดงรายชื่อผู้ป่วยที่รอ ตามช่วงเวลา/ความเร่งด่วน/สถานะ</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ แสดงรายการคิวแยกตามสถานะ (CheckIn/Holding/Inprogress) + เวลารอ &nbsp;✘ จัดตามความเร่งด่วนยังไม่ได้</td></tr>
+          <tr><td class="col-id">3.3.6</td><td>พิมพ์ใบนำทาง (Navigation slip) ตามรูปแบบที่กำหนด</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ มี report engine (Stimulsoft, ExportReportPdf) ที่ต่อยอดพิมพ์ใบนำทางได้ &nbsp;✘ ยังไม่มี template ใบนำทางเฉพาะ</td></tr>
+          <tr><td class="col-id">3.3.7</td><td>แสดงสถานะ LAB/X-Ray + ล็อค/ปลดล็อคคิวอัตโนมัติ</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องเชื่อม LIS/RIS และเพิ่มกลไกล็อคคิวตามสถานะผล</td></tr>
+          <tr><td class="col-id">3.3.8</td><td>แถบสีสถานะตามแผนก + สถานะ (รอ/กำลังรักษา/เรียกไปแล้ว)</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ มีสถานะคิว (None/CheckIn/Inprogress/Holding/Completed) + แสดงคิวเรียกข้าม (Skipped) บนจอ TV &nbsp;✘ แถบสีแยกตามแผนกต้องปรับ UI</td></tr>
+          <tr><td class="col-id">3.3.9</td><td>ฟังก์ชันเรียกคิวห้องยา (ประวัติยา/แพ้ยา/Vital/Note/Label/แจ้งแพทย์)</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>เป็นฟีเจอร์เภสัชกรรมเชิงลึก ต้องเชื่อม HIS/Pharmacy — ไม่มีในระบบ</td></tr>
+          <tr><td class="col-id">3.3.10</td><td>ห้องฉุกเฉิน ปรับความเร่งด่วนตาม Emergency Triage Score</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องมีระบบ triage/priority</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.4 -->
+    <section id="m34">
+      <h2>3.4 โปรแกรมจอแสดงคิวผู้ป่วย <span style="font-size:13px;color:var(--muted);">(จุดแข็งของระบบ)</span></h2>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการตาม TOR</th><th class="col-st c">สถานะ</th><th>ระบบทำได้แบบไหน</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.4.1</td><td>ปรับรูปแบบหน้าจอเหมาะแต่ละแผนก โดยผู้ดูแล</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ TV ตั้งค่า work list (บริการ+ห้อง+เคาน์เตอร์) ที่จะแสดงได้ &nbsp;✘ ปรับ layout/ธีมเชิงลึกยังจำกัด</td></tr>
+          <tr><td class="col-id">3.4.2</td><td>แสดงคิวที่กำลังรอ / กำลังรักษา / ถูกเรียกข้ามไปแล้ว</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ จอ TV (<code>ScreeningPointRoom</code>) แสดงคิวปัจจุบันที่แต่ละเคาน์เตอร์ + รายการคิวที่ถูกข้าม (Skipped) ครบ</td></tr>
+          <tr><td class="col-id">3.4.3</td><td>แสดงเลขคิว ชื่อ-สกุล เวลารอ ความเร่งด่วน (อย่างน้อย)</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ แสดงเลขคิว + ชื่อ + เวลารอได้ &nbsp;✘ "ความเร่งด่วน" และชื่อผู้ป่วยจริงต้องผูก patient data</td></tr>
+          <tr><td class="col-id">3.4.4</td><td>แสดงผู้ป่วยรอหลายแผนกใน 1 จอ</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ TV รองรับหลายบริการ/ห้อง + carousel เคาน์เตอร์</td></tr>
+          <tr><td class="col-id">3.4.5</td><td>หน้าจอ Dashboard ภาพรวมจำนวนผู้ป่วย</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ มี Dashboard (<code>get-dashboard</code>) + เกณฑ์สีเวลารอ (Configuration) อยู่แล้ว</td></tr>
+          <tr><td class="col-id">3.4.6</td><td>จอคิวห้องยา/การเงิน แสดงสถานะ (กำลังจัดยา/รอการเงิน ฯลฯ)</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ กลไกสถานะคิว + จอแสดงผลมีอยู่ &nbsp;✘ สถานะเฉพาะห้องยา/การเงินต้องเพิ่ม status ใหม่</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.5 -->
+    <section id="m35">
+      <h2>3.5 โปรแกรมนัดหมายผู้ป่วย (เจ้าหน้าที่ + ออนไลน์)</h2>
+      <div class="note crit"><b>ทั้งโมดูลยังไม่มีในระบบ</b> — ระบบ HAOS Queue ปัจจุบันไม่มีแนวคิด "นัดหมาย (Appointment)" ทั้งฝั่งเจ้าหน้าที่และฝั่งผู้ป่วยออนไลน์ ต้องพัฒนาเป็นโมดูลใหม่ทั้งหมด</div>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการตาม TOR</th><th class="col-st c">สถานะ</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.5.1.x</td><td>นัดหมายสำหรับเจ้าหน้าที่ (กำหนดเวลารับ, เชื่อมระบบนัด รพ., จองตามแพทย์/แผนก, active อัตโนมัติ, ยืนยันผ่าน Line OA)</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องสร้างโมดูล Appointment + เชื่อม HIS + Line OA</td></tr>
+          <tr><td class="col-id">3.5.2.x</td><td>นัดหมายออนไลน์สำหรับผู้ป่วย (ลงทะเบียน, ยืนยันตัวตน, จองแผนก/แพทย์/เวลา, ดูประวัติ QR, ตรวจสิทธิ์, ผูก Line OA/เว็บไซต์)</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องสร้าง portal/แอปจองออนไลน์ + ยืนยันตัวตน + เชื่อม Line OA</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.6 -->
+    <section id="m36">
+      <h2>3.6 โปรแกรมยืนยันหน้าแผนกก่อนเข้ารับบริการ</h2>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการตาม TOR</th><th class="col-st c">สถานะ</th><th>ระบบทำได้แบบไหน</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.6.1</td><td>ลงทะเบียนเข้าคิวการรักษา (Check-in)</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ มี <code>CheckinAsync</code> + เช็คอินผ่าน QR (<code>get-queue-scancheckin</code>) อยู่แล้ว</td></tr>
+          <tr><td class="col-id">3.6.2</td><td>ตรวจสอบสิทธิ์ สปสช. ผ่านบัตรประชาชน</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ไม่มี NHSO / ID card — เหมือน 3.1.2</td></tr>
+          <tr><td class="col-id">3.6.3</td><td>ส่งข้อมูลเปิดลงทะเบียนผ่าน HIS</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้อง HIS connector</td></tr>
+          <tr><td class="col-id">3.6.4-5</td><td>ตรวจประวัติ + เปิด Visit + แสดงสิทธิ์</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องมี Patient/Visit + สิทธิ์</td></tr>
+          <tr><td class="col-id">3.6.6</td><td>พิมพ์บัตรคิว + QR + ปรับแต่งได้</td><td class="c"><span class="st s-partial">บางส่วน</span></td><td>✔ ออกบัตร + QR ได้ ✘ ข้อมูลผู้ป่วย/ปรับ layout จำกัด (เหมือน 3.1.6)</td></tr>
+          <tr><td class="col-id">3.6.7-8</td><td>เปิด Visit หลายคลินิก + ตรวจนัด Lab/X-ray</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td><td>ต้องเชื่อม HIS/นัดหมาย</td></tr>
+          <tr><td class="col-id">3.6.9</td><td>รองรับ WebSocket ลดภาระดึงข้อมูล</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ SignalR (เหมือน 3.1.11)</td></tr>
+          <tr><td class="col-id">3.6.10</td><td>ตรวจสอบลำดับคิวการรักษา</td><td class="c"><span class="st s-yes">ทำได้</span></td><td>✔ <code>GetQueueDetail</code> คืน <b>จำนวนคิวที่รออยู่ก่อนหน้า (WaitingQueue)</b> + ติดตามผ่าน Mobile ได้</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.7 -->
+    <section id="m37">
+      <h2>3.7 ระบบแจ้งเตือนการรักษา (Line OA)</h2>
+      <div class="note crit"><b>ทั้งโมดูลยังไม่มี</b> — ไม่มีการเชื่อม LINE OA / Flex Message / Auto message / ตั้งเวลาส่ง ต้องพัฒนาใหม่ (LINE Messaging API)</div>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการ</th><th class="col-st c">สถานะ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.7.1-5</td><td>แจ้งเตือนการรักษา/ผล/นัด ผ่าน Line OA, Flex Message, ตั้งเวลาส่ง, บันทึกสนทนา, Auto message</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.8 -->
+    <section id="m38">
+      <h2>3.8 ระบบชำระเงินออนไลน์ & จ่ายยา (Smart Dispensing)</h2>
+      <div class="note crit"><b>ทั้งโมดูลยังไม่มี</b> — ไม่มีระบบชำระเงิน, เชื่อมเภสัชกรรม, จัดส่งยา, Pickup Code, รายงานการจัดส่ง ต้องพัฒนาใหม่ + เชื่อม Payment Gateway/Pharmacy</div>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการ</th><th class="col-st c">สถานะ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.8.1-9</td><td>ชำระเงินผ่านแอป/เว็บ, เตรียมยาอัตโนมัติ, เลือกรับเอง/ส่งบ้าน, ส่งคิวจุดจัดยาอัตโนมัติ, Pickup Code, บันทึกประวัติจัดส่ง, นโยบายแจ้งเตือน, รายงานรายวัน/เดือน</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.9 -->
+    <section id="m39">
+      <h2>3.9 ระบบ Tele-pharmacy</h2>
+      <div class="note crit"><b>ทั้งโมดูลยังไม่มี</b> — เติมยาออนไลน์, ยืนยันตัวตน, refill ตามสิทธิ์แพทย์, ชำระเงิน, ส่งคิวจัดยา Tele-pharmacy, แจ้ง Line OA + Pickup Code, ติดตามสถานะ ต้องพัฒนาใหม่</div>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>ความต้องการ</th><th class="col-st c">สถานะ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.9.1-9</td><td>ตรวจสอบ/ชำระเงิน, ดึงรายการยา refill, เลือกยา+จำนวน, ชำระเงิน Third party, ส่งคิวจัดยา, แจ้ง Line OA+Pickup Code, แสดงสถานะคำขอ, จัดเก็บข้อมูลทะเบียน/บัญชี/เภสัช</td><td class="c"><span class="st s-no">ยังไม่ได้</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 3.10-3.11 -->
+    <section id="m310">
+      <h2>3.10–3.11 ตู้บริการ KIOSK & Check-IN (ฮาร์ดแวร์)</h2>
+      <div class="note"><b>เป็นข้อกำหนดฮาร์ดแวร์</b> (โครงโลหะ, จอ Touch 21.5", CPU 4-core, RAM 8GB, SSD 128GB, LAN/WiFi, เครื่องพิมพ์ Thermal 80mm, เครื่องอ่านบัตรประชาชน, กล้อง HD) — <b>นอกขอบเขตซอฟต์แวร์ HAOS Queue</b> แต่ซอฟต์แวร์ของระบบ (Angular web) <b>สามารถรันบนตู้ KIOSK ได้</b> หากพัฒนาหน้าจอ kiosk + เชื่อมอุปกรณ์ (card reader/printer/camera)</div>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>รายการ</th><th class="col-st c">สถานะ</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">3.10.x</td><td>ตู้ KIOSK กดบัตรคิว (จอ/CPU/RAM/SSD/เครือข่าย/printer/card reader/กล้อง)</td><td class="c"><span class="st s-hw">HW</span></td><td>จัดซื้อฮาร์ดแวร์ + พัฒนา UI kiosk + driver อุปกรณ์</td></tr>
+          <tr><td class="col-id">3.11.x</td><td>ตู้ Check-IN (สเปกใกล้เคียง KIOSK)</td><td class="c"><span class="st s-hw">HW</span></td><td>เช่นเดียวกับ 3.10</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4-5 -->
+    <section id="m4">
+      <h2>4–5 อุปกรณ์ประกอบ & เงื่อนไขเฉพาะ</h2>
+      <table>
+        <thead><tr><th class="col-id">ข้อ</th><th>รายการ</th><th class="col-st c">สถานะ</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td class="col-id">4.1</td><td>เครื่องสำรองไฟ 1500VA × 3 ชุด</td><td class="c"><span class="st s-hw">HW</span></td><td>จัดซื้อ</td></tr>
+          <tr><td class="col-id">5/6.1</td><td>รับประกัน 1 ปี</td><td class="c"><span class="st s-hw">เงื่อนไข</span></td><td>งานบริการ/สัญญา</td></tr>
+          <tr><td class="col-id">6.2-3</td><td>ของใหม่ + คู่มือ (ไทย/Quick/Technical)</td><td class="c"><span class="st s-hw">เงื่อนไข</span></td><td>จัดทำเอกสาร</td></tr>
+          <tr><td class="col-id">6.4</td><td>แก้ไข Remote ทันทีในเวลาราชการ</td><td class="c"><span class="st s-hw">เงื่อนไข</span></td><td>SLA สนับสนุน</td></tr>
+          <tr><td class="col-id">6.5-6</td><td>อบรมการใช้งาน + ส่งมอบติดตั้งภายใน 120 วัน</td><td class="c"><span class="st s-hw">เงื่อนไข</span></td><td>งานบริการ/แผนงาน</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- CONCLUSION -->
+    <section id="concl">
+      <h2>ข้อสรุป & ข้อเสนอแนะ</h2>
+      <h3>สิ่งที่ระบบทำได้ทันที (ใช้เป็นฐานต่อยอด)</h3>
+      <ul>
+        <li>✅ <b>แกนเรียกคิว</b>: เรียก/ส่งต่อ/พัก/เรียกซ้ำ/เสร็จสิ้น (FIFO + เลือกคิวเฉพาะ)</li>
+        <li>✅ <b>เช็คอิน</b> (manual + QR scan) + ตรวจลำดับคิว/จำนวนคิวรอ</li>
+        <li>✅ <b>จอแสดงผล TV</b>: คิวปัจจุบัน/เรียกข้าม, หลายแผนกใน 1 จอ, เสียงเรียก</li>
+        <li>✅ <b>Dashboard</b> + เกณฑ์สีเวลารอ</li>
+        <li>✅ <b>Real-time WebSocket</b> (SignalR) — ตรงสเปกข้อ 3.1.11 / 3.6.9</li>
+        <li>✅ <b>Responsive + Mobile tracking</b> ผ่าน QueueKey/QR</li>
+        <li>✅ <b>Report engine</b> (Stimulsoft PDF) ต่อยอดบัตรคิว/ใบนำทางได้</li>
+      </ul>
+
+      <h3>สิ่งที่ต้องพัฒนาใหม่ (Gap หลัก เรียงตามความสำคัญ)</h3>
+      <ol>
+        <li>🔌 <b>HIS Integration (API Gateway)</b> — รากฐานของเกือบทุกข้อ (ผู้ป่วย, Visit, สิทธิ์, นัด)</li>
+        <li>🆔 <b>ตรวจสอบสิทธิ์ สปสช. + เครื่องอ่านบัตรประชาชน + ถ่ายรูป</b></li>
+        <li>👤 <b>โมเดลผู้ป่วย/Visit + ลงทะเบียนผู้ป่วยใหม่</b> + ระบบสิทธิ์การรักษา</li>
+        <li>⚡ <b>ระบบความเร่งด่วน/Triage</b> (คิวลัด, Emergency Triage Score)</li>
+        <li>📅 <b>โมดูลนัดหมาย</b> (เจ้าหน้าที่ + ออนไลน์)</li>
+        <li>💬 <b>LINE OA</b> (แจ้งเตือน, Flex Message, ยืนยันนัด, Pickup Code)</li>
+        <li>💊 <b>เภสัชกรรม</b>: เรียกคิวห้องยา (ประวัติยา/แพ้ยา/Vital), สถานะ LAB/X-ray</li>
+        <li>💳 <b>ชำระเงินออนไลน์ + Smart Dispensing + Tele-pharmacy</b></li>
+        <li>🖥️ <b>ฮาร์ดแวร์ KIOSK/Check-in</b> + หน้าจอ kiosk + driver อุปกรณ์</li>
+      </ol>
+
+      <div class="note tip"><b>ข้อเสนอแนะเชิงกลยุทธ์:</b> ระบบ HAOS Queue เหมาะเป็น <b>"Queue Engine แกนกลาง"</b> ของโครงการนี้ (ครอบคลุมข้อ 3.3, 3.4, 3.6 ส่วนกลไกคิว) แต่การจะตอบ TOR ฉบับนี้ได้ครบ ต้องวางสถาปัตยกรรมเพิ่ม <b>4 เสาหลัก</b> ที่ระบบยังไม่มี: (1) HIS/สปสช. Integration, (2) Patient/Visit/Appointment, (3) LINE OA + Notification, (4) Payment + Pharmacy/Tele-pharmacy — พร้อมจัดหาฮาร์ดแวร์ตู้บริการ</div>
+      <div class="note crit"><b>คำเตือนสำหรับการประเมินราคา/ขอบเขต:</b> ประมาณ <b>60–70% ของข้อกำหนดซอฟต์แวร์</b> เป็นโมดูลใหม่ที่ต้องพัฒนาและเชื่อมระบบภายนอก ความเสี่ยงหลักคือ <b>การพึ่งพาสเปก API ของ HIS/สปสช./LINE/Payment</b> ที่อยู่นอกการควบคุม ควรกำหนดเป็นเงื่อนไข dependency ให้ชัดเจน</div>
+    </section>
+
+    <footer>Gap Analysis · TOR "Smart Queue (โรงพยาบาล)" เทียบระบบ HAOS Queue · จัดทำ 2026-06-26 · เอกสารประกอบการพิจารณาขอบเขตงาน</footer>
+  </main>
+</div>
+</body>
+</html>

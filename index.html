@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAOS Queue · Smart Queue — ศูนย์รวมเอกสาร</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--his:#7b2cbf;
+    --bg:#eef2f7;--card:#fff;--text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.65;}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 24px 70px;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--his));color:#fff;border-radius:20px;padding:42px 40px;box-shadow:0 14px 38px rgba(30,96,145,.28);margin-bottom:14px;}
+  .hero h1{margin:0 0 8px;font-size:32px;font-weight:800;}
+  .hero p{margin:4px 0;opacity:.95;font-size:15px;max-width:720px;}
+  .hero .badges{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;}
+  .hero .badge{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);padding:5px 13px;border-radius:20px;font-size:12.5px;}
+
+  .crumb{font-size:12.5px;color:var(--muted);margin:14px 2px 22px;font-family:monospace;}
+
+  h2.sec{font-size:15px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:30px 4px 14px;}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;}.hero{padding:30px 24px;}.hero h1{font-size:25px;}}
+
+  .card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;text-decoration:none;color:inherit;box-shadow:0 4px 14px rgba(0,0,0,.05);transition:transform .15s,box-shadow .15s,border-color .15s;position:relative;overflow:hidden;}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--accent);}
+  .card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(30,96,145,.16);border-color:var(--primary-light);}
+  .card .ico{font-size:30px;margin-bottom:10px;}
+  .card h3{margin:0 0 6px;font-size:18px;color:var(--primary);}
+  .card p{margin:0 0 14px;font-size:13.5px;color:var(--muted);flex:1;}
+  .card .meta{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+  .card .tag{background:#eef6fb;color:var(--primary);padding:3px 10px;border-radius:12px;font-weight:600;}
+  .card .go{color:var(--accent);font-weight:700;}
+
+  .card.c1::before{background:var(--accent);} .card.c1 h3{color:var(--accent);}
+  .card.c2::before{background:#d97706;} .card.c2 h3{color:#b45309;} .card.c2 .tag{background:#fef3e2;color:#b45309;}
+  .card.c3::before{background:var(--his);} .card.c3 h3{color:var(--his);} .card.c3 .tag{background:#f3e9fc;color:var(--his);}
+
+  .mini{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;}
+  .mini a{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;text-decoration:none;color:var(--text);font-size:13px;transition:background .15s;}
+  .mini a:hover{background:#f4f8fb;border-color:var(--primary-light);}
+
+  .flowline{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-top:14px;font-size:13.5px;color:var(--muted);}
+  .flowline b{color:var(--text);}
+  .chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .chain .n{background:#eef6fb;color:var(--primary);border:1px solid #d6e8f3;border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:600;}
+  .chain .arr{color:var(--accent);font-weight:700;}
+
+  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:40px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>📋 HAOS Queue · Smart Queue</h1>
+    <p>ศูนย์รวมเอกสารวิเคราะห์และออกแบบระบบคิว — ตั้งแต่ Flow การทำงานของระบบปัจจุบัน, การเทียบกับ TOR โรงพยาบาล, ไปจนถึงการออกแบบเชื่อมต่อ HIS</p>
+    <div class="badges">
+      <span class="badge">.NET 8.0 + Angular 18</span>
+      <span class="badge">SignalR Real-time</span>
+      <span class="badge">Hospital Smart Queue</span>
+      <span class="badge">อัปเดต: 2026-06-26</span>
+    </div>
+  </div>
+  <div class="crumb">C:\AYD\Project\HAOS\m-queue\flow\</div>
+
+  <h2 class="sec">เอกสารหลัก</h2>
+  <div class="grid">
+
+    <a class="card c1" href="HAOS-Queue-System-Flow.html">
+      <div class="ico">⚙️</div>
+      <h3>1. Flow การทำงานของระบบ</h3>
+      <p>วงจรชีวิตของคิวทั้งหมด — ออกบัตร → เช็คอิน → เรียก → ส่งต่อ/พัก/เสร็จ, สถานะคิว, SignalR real-time, จอ TV, Mobile, Auth, API, Database พร้อมไดอะแกรม UI</p>
+      <div class="meta"><span class="tag">ระบบปัจจุบัน</span><span class="go">เปิดเอกสาร →</span></div>
+    </a>
+
+    <a class="card c2" href="TOR-Gap-Analysis.html">
+      <div class="ico">📊</div>
+      <h3>2. Gap Analysis เทียบ TOR</h3>
+      <p>เทียบความต้องการใน TOR Smart Queue (โรงพยาบาล) กับระบบปัจจุบัน — ทำได้ / ทำได้บางส่วน / ยังทำไม่ได้ / ฮาร์ดแวร์ พร้อม scorecard และข้อเสนอแนะรายโมดูล 3.1–3.11</p>
+      <div class="meta"><span class="tag">เทียบ TOR</span><span class="go">เปิดเอกสาร →</span></div>
+    </a>
+
+    <a class="card c3" href="HIS-Integration-Design.html">
+      <div class="ico">🔌</div>
+      <h3>3. HIS Integration Design</h3>
+      <p>การเชื่อมต่อ ระบบคิว ⇄ HIS — สถาปัตยกรรม, API ที่ HIS/Queue ต้องเปิด, ★ ระดับความจำเป็น + ทางเลือก, Sequence flow, Master mapping, Security/PDPA, Checklist คำถามถึงทีม HIS</p>
+      <div class="meta"><span class="tag">ออกแบบเชื่อมต่อ</span><span class="go">เปิดเอกสาร →</span></div>
+    </a>
+
+    <a class="card" href="HAOS-Queue-System-Flow.md">
+      <div class="ico">📝</div>
+      <h3>Flow (ฉบับ Markdown)</h3>
+      <p>เนื้อหาเดียวกับเอกสาร Flow ข้อ 1 ในรูปแบบ Markdown — เหมาะสำหรับนำไปแก้ไข/รวมเข้า repo หรือ wiki</p>
+      <div class="meta"><span class="tag">.md</span><span class="go">เปิดไฟล์ →</span></div>
+    </a>
+
+  </div>
+
+  <h2 class="sec">ลำดับการอ่านที่แนะนำ</h2>
+  <div class="flowline">
+    <b>อ่านเรียงตามลำดับนี้เพื่อเห็นภาพรวมทั้งโครงการ:</b>
+    <div class="chain">
+      <span class="n">1 · เข้าใจระบบปัจจุบัน</span>
+      <span class="arr">→</span>
+      <span class="n">2 · ดูว่า TOR ต้องการอะไรเพิ่ม</span>
+      <span class="arr">→</span>
+      <span class="n">3 · ออกแบบเชื่อม HIS เพื่ออุดช่องว่าง</span>
+    </div>
+  </div>
+
+  <h2 class="sec">อื่น ๆ</h2>
+  <div class="mini">
+    <a href="README.md">📄 README.md</a>
+    <a href="../tor/Draft TOR - smart queue.pdf">📑 ต้นฉบับ TOR (PDF)</a>
+  </div>
+
+  <footer>HAOS Queue · Smart Queue Documentation Hub · จัดทำ 2026-06-26</footer>
+</div>
+</body>
+</html>
