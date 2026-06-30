@@ -64,6 +64,16 @@
 
   .big-num{font-size:clamp(40px,7vw,86px);font-weight:800;color:var(--gold);line-height:1;}
 
+  /* browser frame for UI mockups */
+  .browser{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 26px 64px rgba(0,0,0,.42);width:100%;max-width:1320px;margin:14px auto 0;}
+  .browser .bar{background:#e9edf2;display:flex;align-items:center;gap:8px;padding:10px 14px;}
+  .browser .bar i{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  .browser .bar .u{flex:1;background:#fff;border-radius:6px;padding:5px 12px;font-size:12px;color:#5c6670;margin-left:6px;text-align:left;}
+  /* scroll container: image fills full width, scrolls vertically if taller */
+  .browser .shot-wrap{max-height:60vh;overflow:auto;background:#f8f8f8;}
+  .browser .shot{display:block;width:100%;height:auto;border:none;}
+  .cap{text-align:center;margin-top:12px;font-size:clamp(12px,1.4vw,15px);opacity:.85;}
+
   /* cover */
   .cover-badge{display:inline-block;border:1px solid var(--glassb);background:var(--glass);border-radius:30px;padding:8px 18px;font-size:14px;margin-bottom:24px;}
   .cover-foot{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap;}
@@ -175,6 +185,42 @@
       <div class="card"><div class="ic">➡️</div><b>ส่งต่อ / เสร็จ</b><span>ไปแผนกอื่น หรือ จบบริการ</span></div>
     </div>
     <p class="lead muted" style="margin-top:22px;">คิวแบ่งแท็บตามสถานะ (รอเช็คอิน · รอเรียก · กำลังบริการ · เสร็จ) เห็นภาพชัด ค้นหา/กรองได้</p>
+  </section>
+
+  <!-- 6.5 UI MOCKUP · CALL QUEUE -->
+  <section class="slide">
+    <div class="kicker">หน้าตาจริงของระบบ</div>
+    <h2>หน้าเรียกคิว — เจ้าหน้าที่ทำงานครบในจอเดียว</h2>
+    <div class="browser">
+      <div class="bar">
+        <i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+        <span class="u">🔒 haos-queue.hospital.local / queue/calling</span>
+      </div>
+      <div class="shot-wrap">
+        <object class="shot" style="aspect-ratio:1456/938" type="image/svg+xml" data="assets/ui-call-queue.svg">
+          <img class="shot" src="assets/ui-call-queue.svg" alt="หน้าจอเรียกคิว HAOS Queue">
+        </object>
+      </div>
+    </div>
+    <p class="cap">หน้าเรียกคิว — เรียก/ส่งต่อ/พักคิว · รายการคิวแยกตามสถานะ · เรียลไทม์</p>
+  </section>
+
+  <!-- 6.6 UI MOCKUP · DASHBOARD -->
+  <section class="slide">
+    <div class="kicker">หน้าตาจริงของระบบ</div>
+    <h2>Dashboard — ภาพรวมคิวทั้งโรงพยาบาล</h2>
+    <div class="browser">
+      <div class="bar">
+        <i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+        <span class="u">🔒 haos-queue.hospital.local / dashboard</span>
+      </div>
+      <div class="shot-wrap">
+        <object class="shot" style="aspect-ratio:1456/1411" type="image/svg+xml" data="assets/ui-dashboard-queue.svg">
+          <img class="shot" src="assets/ui-dashboard-queue.svg" alt="หน้าจอ Dashboard ระบบคิว">
+        </object>
+      </div>
+    </div>
+    <p class="cap">Dashboard — จำนวนคิว/เวลารอแต่ละแผนก พร้อมสีเตือนเกินเกณฑ์</p>
   </section>
 
   <!-- 7 SERVICE ROUTING (HERO FEATURE) -->
@@ -296,7 +342,7 @@
 <!-- controls -->
 <div class="dots" id="dots"></div>
 <div class="ctrl">
-  <span class="counter" id="counter">1 / 13</span>
+  <span class="counter" id="counter">1 / 15</span>
   <button class="btn" id="prev">‹</button>
   <button class="btn" id="next">›</button>
   <button class="btn" id="full" title="เต็มจอ (F)">⛶</button>
