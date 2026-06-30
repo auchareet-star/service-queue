@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คำถาม Gap — Requirements Clarification</title>
+<style>
+  :root{
+    --primary:#1e6091;--primary-light:#168aad;--accent:#34a0a4;--bg:#f4f7fa;--card:#fff;
+    --text:#2b2d31;--muted:#5c6670;--border:#e1e7ed;--code-bg:#f0f4f8;--his:#7b2cbf;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI","Sarabun","Tahoma",sans-serif;background:var(--bg);color:var(--text);line-height:1.62;font-size:14.5px;}
+  .layout{display:flex;max-width:1380px;margin:0 auto;}
+  .sidebar{width:255px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--border);padding:22px 14px;}
+  .sidebar h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:12px 0 6px;}
+  .sidebar a{display:block;padding:6px 9px;border-radius:7px;color:var(--text);text-decoration:none;font-size:12.6px;}
+  .sidebar a:hover{background:var(--code-bg);color:var(--primary);}
+  .content{flex:1;padding:30px 38px 80px;min-width:0;}
+
+  .hero{background:linear-gradient(135deg,var(--primary),var(--primary-light) 55%,var(--accent));color:#fff;border-radius:18px;padding:30px 34px;margin-bottom:22px;box-shadow:0 12px 30px rgba(30,96,145,.26);}
+  .hero h1{margin:0 0 8px;font-size:25px;}
+  .hero p{margin:3px 0;opacity:.95;font-size:14px;}
+
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin-bottom:18px;scroll-margin-top:14px;}
+  section>h2{margin:0 0 6px;font-size:18px;color:var(--primary);padding-bottom:9px;border-bottom:2px solid var(--code-bg);}
+  .gdesc{font-size:12.8px;color:var(--muted);margin:4px 0 12px;}
+  p{margin:7px 0;}
+  .muted{color:var(--muted);font-size:13px;}
+  code{background:var(--code-bg);color:#b5179e;padding:2px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12px;}
+
+  .q{border:1px solid var(--border);border-left:4px solid var(--primary-light);border-radius:10px;padding:13px 16px;margin:11px 0;background:#fbfdff;}
+  .q .head{display:flex;align-items:flex-start;gap:10px;}
+  .q .qn{flex-shrink:0;background:var(--primary);color:#fff;border-radius:7px;padding:2px 9px;font-weight:800;font-size:12px;font-family:monospace;}
+  .q .qt{font-weight:700;font-size:14.5px;color:var(--text);}
+  .q .own{font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:11px;margin-left:6px;vertical-align:middle;}
+  .o-you{background:#e9f7ef;color:#15803d;}
+  .o-add{background:#eef0fe;color:#4f46e5;}
+  .q ul{margin:9px 0 4px;padding-left:20px;}
+  .q li{margin:3px 0;font-size:13.3px;}
+  .q .why{margin-top:8px;font-size:12.6px;color:var(--his);background:#f7f0fe;border-radius:7px;padding:5px 11px;}
+  .q .why b{color:#6b21a8;}
+
+  .note{background:#e9f7ef;border-left:4px solid #22c55e;padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13.5px;}
+  .note.tip{background:#e9f7ef;border-left-color:#22c55e;}
+  .note.warn{background:#fff8e6;border-left-color:#f59e0b;}
+
+  @media(max-width:900px){.sidebar{display:none;}.content{padding:18px;}}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:22px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>หมวดคำถาม</h2>
+    <a href="#A">A · ขอบเขตงาน (ถามก่อน)</a>
+    <a href="#B">B · การเชื่อมต่อ HIS</a>
+    <a href="#C">C · ลงทะเบียนผู้ป่วย</a>
+    <a href="#D">D · Visit</a>
+    <a href="#E">E · สิทธิ์ สปสช.</a>
+    <a href="#F">F · คิว & เส้นทาง & ความเร่งด่วน</a>
+    <a href="#G">G · Smart Dispensing</a>
+    <a href="#H">H · Tele-pharmacy</a>
+    <a href="#I">I · ชำระเงินออนไลน์</a>
+    <a href="#J">J · แจ้งเตือน LINE OA</a>
+    <a href="#K">K · นัดหมาย & การอนุมัติ</a>
+    <a href="#L">L · ฮาร์ดแวร์ / จอ / บัตร</a>
+    <a href="#M">M · ปริมาณ / Deploy / Security</a>
+    <a href="#N">N · ส่งมอบ / อบรม / รับประกัน</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>❓ คำถาม Gap — สำหรับคุยกับโรงพยาบาล / ทีม HIS</h1>
+      <p>รวมคำถามที่ต้องเคลียร์ก่อนเริ่มพัฒนา — เพื่อกำหนดขอบเขต ลดความเสี่ยง และประเมินงานได้แม่นยำ</p>
+      <p style="opacity:.85;font-size:13px;margin-top:8px;">ขยายจากร่างคำถามเดิม + เพิ่มหัวข้อที่ยังขาด · 2026-06-26</p>
+    </div>
+
+    <div class="note tip"><b>ตอบคำถามคุณ: "แบบนี้พอได้มั้ย"</b> — ร่างเดิม 10 ข้อ <b>ดีและตรงจุดมาก</b> โดยเฉพาะข้อขอบเขต "ระบบที่ไม่เกี่ยวกับคิว" ผมจัดกลุ่มใหม่ + เพิ่มคำถามย่อยให้คม และเติมหัวข้อที่ขาด (ปริมาณ/Performance, ฮาร์ดแวร์/จอ, PDPA, ส่งมอบ/migration) &nbsp; <span class="own o-you">ของคุณ</span> = คำถามจากร่างเดิม &nbsp; <span class="own o-add">เพิ่มเติม</span> = ที่ผมเสนอเพิ่ม</div>
+
+    <!-- A -->
+    <section id="A">
+      <h2>A · ขอบเขตงาน (Scope) — สำคัญสุด ถามก่อนเลย</h2>
+      <div class="gdesc">กำหนดให้ชัดว่าอะไร "สร้าง / เชื่อมต่อ / นอกขอบเขต" — กันงานบานปลาย</div>
+      <div class="q"><div class="head"><span class="qn">A1</span><div><span class="qt">ระบบที่ไม่เกี่ยวกับคิว (HIS, การเงิน, เภสัช, LIS/RIS) เราต้อง "พัฒนา" หรือ "เชื่อมต่อระบบเดิม" หรือ "นอกขอบเขต"?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>ระบบไหนเป็นของเดิมที่เราแค่ "ต่อ API"?</li><li>ระบบไหนต้องสร้างส่วนติดต่อ/หน้าจอใหม่?</li><li>ส่วนไหน "นอกขอบเขต" ชัดเจน (ไม่ทำ)?</li></ul>
+        <div class="why"><b>ทำไม:</b> ตัวกำหนด scope/ราคา/ความเสี่ยงทั้งโครงการ — ถ้าไม่ชัด งานจะบานปลาย</div>
+      </div>
+    </section>
+
+    <!-- B -->
+    <section id="B">
+      <h2>B · การเชื่อมต่อ HIS</h2>
+      <div class="q"><div class="head"><span class="qn">B1</span><div><span class="qt">เชื่อมต่อรูปแบบไหน? (REST/JSON, HL7 v2, FHIR) มี API Gateway/middleware อยู่แล้วไหม?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>HIS ยี่ห้อ/เวอร์ชันอะไร (HOSxP/JHCIS/SSB/Vendor เฉพาะ)? ใครดูแล? ติดต่อใคร?</li><li>รองรับ <b>webhook/event push</b> หรือทำได้แค่ให้ <b>polling</b>?</li><li>Auth แบบไหน (OAuth2/API key/mTLS)? มี IP allowlist?</li><li>มี <b>sandbox/test environment</b> ไหม? พร้อมเมื่อไร?</li><li>SLA/uptime, rate limit, ปริมาณ request สูงสุด?</li></ul>
+        <div class="why"><b>ทำไม:</b> กำหนดสถาปัตยกรรม (sync/async), effort การ map, และ <b>เป็น critical path</b> — ถ้า HIS ไม่พร้อมงาน block</div>
+      </div>
+    </section>
+
+    <!-- C -->
+    <section id="C">
+      <h2>C · ลงทะเบียนผู้ป่วยใหม่</h2>
+      <div class="q"><div class="head"><span class="qn">C1</span><div><span class="qt">ลงทะเบียนผู้ป่วยใหม่ต้องใช้ข้อมูล (ฟิลด์) อะไรบ้าง?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>ฟิลด์บังคับ vs ไม่บังคับ (CID, คำนำหน้า, ชื่อ-สกุล, วันเกิด, เพศ, ที่อยู่, เบอร์, สิทธิ์...)?</li><li>ระบบคิว <b>"เขียน" ข้อมูลเข้า HIS ได้ไหม</b> หรือเจ้าหน้าที่ลงใน HIS แล้วเราอ่าน HN กลับ? (รพ.ส่วนใหญ่ไม่ให้เขียนตรง)</li><li>ตรวจซ้ำ (duplicate) ยังไง — ใช้ CID เป็น key?</li><li>ต้องบันทึก <b>รูปถ่าย/ภาพบัตร</b> ไหม? เก็บที่ฝั่งไหน?</li></ul>
+        <div class="why"><b>ทำไม:</b> กำหนดฟอร์ม + ทิศทางข้อมูล (read/write) + ความเสี่ยง PDPA</div>
+      </div>
+    </section>
+
+    <!-- D -->
+    <section id="D">
+      <h2>D · Visit</h2>
+      <div class="q"><div class="head"><span class="qn">D1</span><div><span class="qt">เปิด Visit ต้องใช้/ส่งข้อมูลอะไรบ้าง?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>ฟิลด์ที่ต้องส่งตอนเปิด Visit (HN, clinic code, eligibility, doctor, visit type, วันที่...)?</li><li>ระบบคิว <b>เปิด Visit เองได้ไหม</b> หรือ HIS เปิดแล้วส่ง <code>VN</code> กลับ (reverse-flow)?</li><li>1 ผู้ป่วยมีหลาย Visit/วัน (หลายคลินิก) — จัดการยังไง?</li><li>ปิด Visit เมื่อไร / ใครปิด?</li></ul>
+        <div class="why"><b>ทำไม:</b> Visit คือ key ผูกคิวกับ HIS — flow ทั้งหมดขึ้นกับเรื่องนี้</div>
+      </div>
+    </section>
+
+    <!-- E -->
+    <section id="E">
+      <h2>E · สิทธิ์ สปสช.</h2>
+      <div class="q"><div class="head"><span class="qn">E1</span><div><span class="qt">เมื่อตรวจสอบสิทธิ์กับ สปสช. แล้ว ต้องส่งอะไรไป HIS เพื่อเปิด Visit?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>ผลตรวจสิทธิ์คืนอะไรบ้าง (main/sub scheme, รพ.หลัก/รอง, ความถูกต้อง)?</li><li>ตอนเปิด Visit ต้องแนบ <b>eligibility code</b> รูปแบบไหน?</li><li>ตรวจสิทธิ์ <b>ผ่าน HIS</b> หรือ <b>ต่อ NHSO ตรง</b>? ใช้ authentication code / เครื่องอ่านบัตรรุ่นไหน/SDK อะไร?</li><li>กรณีหลายสิทธิ์ — ใครเลือก (ผู้ป่วย/เจ้าหน้าที่)?</li></ul>
+        <div class="why"><b>ทำไม:</b> เป็นจุดเชื่อม 3 ฝ่าย (คิว-NHSO-HIS) ที่ซับซ้อนสุด ต้องรู้ลำดับ/ฟอร์แมตจริง</div>
+      </div>
+    </section>
+
+    <!-- F -->
+    <section id="F">
+      <h2>F · คิว · เส้นทางบริการ · ความเร่งด่วน</h2>
+      <div class="q"><div class="head"><span class="qn">F1</span><div><span class="qt">เส้นทางบริการของผู้ป่วยแต่ละแผนกเป็นอย่างไร (ผังบริการ)?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>"เสร็จจุดนี้ → ไปจุดไหนต่อ" ของแต่ละแผนกเป็นยังไง? (input ของ Service Routing)</li><li>มีเส้นทางวนกลับ (เช่น Lab → กลับห้องตรวจ) ไหม?</li></ul>
+        <div class="why"><b>ทำไม:</b> เป็นข้อมูลตั้งค่ากฎ Routing — ถ้าไม่รู้ ตั้งกฎไม่ได้</div>
+      </div>
+      <div class="q"><div class="head"><span class="qn">F2</span><div><span class="qt">เกณฑ์ความเร่งด่วน / ER Triage ใช้ระบบอะไร?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>ใช้ Triage score มาตรฐานไหน (เช่น ESI / MOPH 5 ระดับ)?</li><li>คิวลัดมีกฎอย่างไร?</li></ul>
+        <div class="why"><b>ทำไม:</b> ออกแบบ Priority/Triage (TOR 3.3.2/3.3.10)</div>
+      </div>
+    </section>
+
+    <!-- G -->
+    <section id="G">
+      <h2>G · จ่ายยา (Smart Dispensing)</h2>
+      <div class="q"><div class="head"><span class="qn">G1</span><div><span class="qt">ขอบเขต Smart Dispensing แค่ไหน?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>แค่ <b>"ส่งคิวไปห้องจ่ายยา"</b> หรือรวม <b>"จัดส่งยาถึงบ้าน"</b>?</li><li>เชื่อมระบบเภสัช/คลังยาไหม หรือแค่เรียกคิว?</li><li>จัดส่ง: <b>พาร์ทเนอร์ขนส่งเจ้าไหน</b>? ครอบคลุมพื้นที่ไหน? ใครจ่ายค่าส่ง?</li><li><b>Pickup Code</b> ใช้ยืนยันตัวตนยังไง? ใครสแกน?</li><li>รายงานจัดส่ง/นโยบายโทรแจ้งก่อนส่ง ต้องมีไหม (TOR 3.8.8-9)?</li></ul>
+        <div class="why"><b>ทำไม:</b> ขอบเขตต่างกันมากระหว่าง "เรียกคิวยา" กับ "logistics ส่งยา" — กระทบ effort สูง</div>
+      </div>
+    </section>
+
+    <!-- H -->
+    <section id="H">
+      <h2>H · Tele-pharmacy</h2>
+      <div class="q"><div class="head"><span class="qn">H1</span><div><span class="qt">ขอบเขต Tele-pharmacy แค่ไหน?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>แค่ <b>เติมยา (refill) ออนไลน์</b> หรือรวม <b>ปรึกษาเภสัชกร (video/chat)</b>?</li><li><b>ใครอนุมัติการ refill</b> (เภสัช/แพทย์)? มีขั้นตอนตรวจสอบไหม?</li><li>รายการยาที่ refill ได้ ดึงจากไหน (HIS/แพทย์อนุญาต)?</li><li>ใช้ระบบชำระเงิน + จัดส่ง <b>ชุดเดียวกับ Smart Dispensing</b> ไหม?</li></ul>
+        <div class="why"><b>ทำไม:</b> ถ้ารวม video consult = งานใหญ่ขึ้นมาก ต้องชี้ขอบเขตให้ชัด</div>
+      </div>
+    </section>
+
+    <!-- I -->
+    <section id="I">
+      <h2>I · ระบบชำระเงินออนไลน์</h2>
+      <div class="q"><div class="head"><span class="qn">I1</span><div><span class="qt">ใช้ผู้ให้บริการ (Payment Gateway) เจ้าไหน?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>เจ้าไหน (2C2P / GB Prime Pay / ธนาคาร / PromptPay / TrueMoney...)? มีสัญญาอยู่แล้วไหม?</li><li>เชื่อม <b>ผ่าน HIS billing</b> หรือ <b>ต่อ GW ตรง</b>?</li><li>ช่องทางที่รองรับ (บัตร/QR/e-wallet)?</li><li><b>ใบเสร็จ/ใบกำกับภาษี</b> ออกจากระบบไหน?</li><li>การกระทบยอด (reconcile) / คืนเงิน (refund) จัดการยังไง?</li></ul>
+        <div class="why"><b>ทำไม:</b> แต่ละ GW มี API/ขั้นตอนต่างกัน + เรื่องการเงินมี compliance</div>
+      </div>
+    </section>
+
+    <!-- J -->
+    <section id="J">
+      <h2>J · ระบบแจ้งเตือน (LINE OA)</h2>
+      <div class="q"><div class="head"><span class="qn">J1</span><div><span class="qt">มี event แจ้งเตือนอะไรบ้าง?</span><span class="own o-you">ของคุณ</span></div></div>
+        <p class="muted" style="margin:4px 0;">เสนอ event ที่ควรมี (ให้ รพ. ยืนยัน/เพิ่ม):</p>
+        <ul>
+          <li>คิวใกล้ถึง (เหลืออีก N คิว) · ถูกเรียก · ถูกเรียกข้าม</li>
+          <li>ยืนยันนัดหมาย · เตือนนัดล่วงหน้า (1 วัน/ชม.)</li>
+          <li>ผลตรวจพร้อม · ยาพร้อมรับ/จัดส่ง + <b>Pickup Code</b></li>
+          <li>ชำระเงินสำเร็จ · ยืนยันลงทะเบียน</li>
+        </ul>
+        <ul><li>มี <b>LINE OA channel แล้วหรือยัง</b>? ใครถือ credential?</li><li>ผูก <code>lineUserId</code> กับผู้ป่วยยังไง (สแกน QR / ลงทะเบียน LIFF)?</li><li>ความถี่/เวลาส่ง · ขอบเขต Auto-reply · Flex Message template ใครออกแบบ?</li></ul>
+        <div class="why"><b>ทำไม:</b> กำหนด trigger + ต้องมี channel/consent (PDPA) ก่อนส่งได้</div>
+      </div>
+    </section>
+
+    <!-- K -->
+    <section id="K">
+      <h2>K · นัดหมายผู้ป่วย (เจ้าหน้าที่ + ออนไลน์)</h2>
+      <div class="q"><div class="head"><span class="qn">K1</span><div><span class="qt">การนัดหมายต้องมีผู้อนุมัติหรือไม่?</span><span class="own o-you">ของคุณ</span></div></div>
+        <ul><li>นัดออนไลน์ของผู้ป่วย <b>ต้องให้เจ้าหน้าที่อนุมัติก่อน</b> หรือ <b>auto-confirm</b>?</li><li>มีขั้นตอน <b>สอบถามอาการก่อนยืนยัน</b> ไหม (TOR 3.5.1.7)?</li><li>เชื่อม <b>ระบบนัดเดิมของ รพ.</b> หรือสร้างใหม่?</li><li>slot/quota ต่อแพทย์/วัน ใครกำหนด? นโยบายยกเลิก/เลื่อนนัด?</li></ul>
+        <div class="why"><b>ทำไม:</b> มี/ไม่มี approval flow = ออกแบบ workflow + สถานะต่างกัน</div>
+      </div>
+    </section>
+
+    <!-- L -->
+    <section id="L">
+      <h2>L · ฮาร์ดแวร์ / จอแสดงผล / บัตรคิว</h2>
+      <div class="q"><div class="head"><span class="qn">L1</span><div><span class="qt">จำนวนและรูปแบบอุปกรณ์?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>จำนวน KIOSK / ตู้ Check-in / จอ TV / เคาน์เตอร์ กี่ชุด?</li><li>เครื่องอ่านบัตร / printer / กล้อง รุ่น/SDK อะไร?</li></ul>
+      </div>
+      <div class="q"><div class="head"><span class="qn">L2</span><div><span class="qt">จอแสดงคิว & บัตรคิว ต้องการแบบไหน?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>จอแต่ละแผนก <b>layout ต่างกันไหม</b>? เสียงเรียก (ภาษา/รูปแบบ/เรียกชื่อ)?</li><li>บัตรคิว: ข้อมูลที่ต้องมี, โลโก้, ภาษา, QR? มี <b>ใบนำทาง</b> ไหม?</li></ul>
+        <div class="why"><b>ทำไม:</b> กระทบ UI จอ/Kiosk + template พิมพ์ (TOR 3.1.6/3.3.6/3.4.1)</div>
+      </div>
+    </section>
+
+    <!-- M -->
+    <section id="M">
+      <h2>M · ปริมาณ / Deploy / Security / PDPA</h2>
+      <div class="q"><div class="head"><span class="qn">M1</span><div><span class="qt">ปริมาณการใช้งาน & การ deploy?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>ผู้ป่วย/วัน, peak/ชั่วโมง, จำนวน concurrent users?</li><li>Deploy <b>on-premise หรือ cloud</b>? สเปก server? ใครดูแล? network ภายใน รพ.?</li></ul>
+        <div class="why"><b>ทำไม:</b> sizing/performance + วางสถาปัตยกรรม deploy</div>
+      </div>
+      <div class="q"><div class="head"><span class="qn">M2</span><div><span class="qt">นโยบาย PDPA / Security?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>การจัดการ consent ผู้ป่วย (โดยเฉพาะ LINE/ข้อมูลสุขภาพ)?</li><li>ระดับ audit log ที่ต้องการ? เก็บข้อมูลที่ฝั่งคิวได้แค่ไหน?</li></ul>
+        <div class="why"><b>ทำไม:</b> ข้อมูลสุขภาพเป็นข้อมูลอ่อนไหว — ต้องออกแบบตั้งแต่ต้น</div>
+      </div>
+    </section>
+
+    <!-- N -->
+    <section id="N">
+      <h2>N · ส่งมอบ / Migration / อบรม / รับประกัน</h2>
+      <div class="q"><div class="head"><span class="qn">N1</span><div><span class="qt">การส่งมอบและดูแลต่อเนื่อง?</span><span class="own o-add">เพิ่มเติม</span></div></div>
+        <ul><li>ต้อง <b>migrate ข้อมูล</b> จากระบบคิวเดิมไหม?</li><li>แผน rollout — นำร่องแผนกไหนก่อน?</li><li>อบรมกี่คน/กี่รอบ? คู่มือ (ไทย/Quick/Technical)?</li><li>Support SLA ช่วงรับประกัน (เวลาตอบสนอง/Remote)?</li></ul>
+        <div class="why"><b>ทำไม:</b> ตรง TOR ข้อ 5/6 (รับประกัน/อบรม/120 วัน) + กันงานช่วงส่งมอบ</div>
+      </div>
+    </section>
+
+    <div class="note warn"><b>เคล็ดลับการใช้:</b> ส่งคำถามชุดนี้ให้ รพ./ทีม HIS <b>เป็นลายลักษณ์อักษร</b> และให้ตอบกลับเป็นเอกสาร — คำตอบ (โดยเฉพาะหมวด A, B) จะกลายเป็น <b>ขอบเขตงาน + เงื่อนไข dependency ในสัญญา</b> โดยตรง · เชื่อมโยงกับ Checklist ในเอกสาร <a href="HIS-Integration-Design.html" style="color:var(--his);font-weight:700;">HIS Integration Design §8</a></div>
+
+    <footer>คำถาม Gap · Requirements Clarification · ระบบ Smart Queue · 2026-06-26</footer>
+  </main>
+</div>
+</body>
+</html>
